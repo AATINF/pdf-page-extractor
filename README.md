@@ -1,5 +1,11 @@
 # 📄 PDF 页面提取器（PDF Page Extractor）
 
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/AATINF/pdf-page-extractor)
+![GitHub Release Date](https://img.shields.io/github/release-date/AATINF/pdf-page-extractor)
+![GitHub License](https://img.shields.io/github/license/AATINF/pdf-page-extractor)
+![GitHub stars](https://img.shields.io/github/stars/AATINF/pdf-page-extractor)
+![GitHub Discussions](https://img.shields.io/github/discussions/AATINF/pdf-page-extractor)
+
 > **免安装 · 纯前端 · 离线可用** —— 在浏览器里选页、提取、拆分、合并 PDF，文件全程不离开你的设备。
 
 [📥 前往 Release 下载（单文件版，双击即用）](https://github.com/AATINF/pdf-page-extractor/releases/latest/download/pdf-page-extractor.html)  ·  [🌐 English](README.en.md)
@@ -34,6 +40,12 @@
 ## 📷 界面预览
 
 ![界面预览](界面预览.png)
+
+## 🪜 三步上手（文件不出本机）
+
+![三步流程图](assets/steps.png)
+
+![操作演示](assets/demo.gif)
 
 ## 🧱 技术架构
 
