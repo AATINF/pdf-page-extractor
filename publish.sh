@@ -27,4 +27,4 @@ PYEOF
 cp index.html "v${NEWV}-PDF页面提取器.html"          # 版本历史备份（可在线访问）
 node --check app.js && node --check sw.js            # JS 语法检查
 git add -A && git commit -m "v$NEWV $DESC" && git push
-echo "✅ v$NEWV 已推送，Netlify 约 1 分钟自动部署"
+echo "✅ v$NEWV 已推送至 GitHub（约 1 分钟生效）"
