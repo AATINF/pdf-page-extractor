@@ -55,40 +55,13 @@
   <br><sub><a href="assets/demo.mp4">📹 高清 MP4 版</a></sub>
 </div>
 
-### ② 拆分为单页 ZIP
-
-全选所有页面 → 点击「拆分为单页 ZIP」→ 下载包含每页独立 PDF 的压缩包。
-
-<div align="center">
-  <img src="assets/demo2_split.gif" alt="拆分单页演示" width="680">
-  <br><sub><a href="assets/demo2_split.mp4">📹 高清 MP4 版</a></sub>
-</div>
-
-### ③ 合并多个 PDF
-
-切换到「合并 PDF」标签 → 添加两份文档 → 调整顺序 → 点击「合并」→ 下载合并结果。
-
-<div align="center">
-  <img src="assets/demo3_merge.gif" alt="合并PDF演示" width="680">
-  <br><sub><a href="assets/demo3_merge.mp4">📹 高清 MP4 版</a></sub>
-</div>
-
-### ④ 全屏预览 + 缩放 + 旋转
+### ② 全屏预览 + 缩放 + 旋转
 
 点击眼睛图标进入预览 → 放大查看细节 → 旋转页面确认方向 → 关闭返回。
 
 <div align="center">
   <img src="assets/demo4_preview.gif" alt="全屏预览演示" width="680">
   <br><sub><a href="assets/demo4_preview.mp4">📹 高清 MP4 版</a></sub>
-</div>
-
-### ⑤ 批量选择（范围 + 页码 + 反选）
-
-输入范围 `1-3` 批量添加 → 输入组合页码 `1,3` → 反选快速翻转选择。
-
-<div align="center">
-  <img src="assets/demo5_select.gif" alt="批量选择演示" width="680">
-  <br><sub><a href="assets/demo5_select.mp4">📹 高清 MP4 版</a></sub>
 </div>
 
 ---
@@ -152,12 +125,12 @@
 
 ---
 
-## 🔮 未来规划
+## 🔮 未来规划 & 关联项目
 
-- [ ] DeepSeek Harness 插件：将核心 PDF 处理能力封装为 DSH 工具插件/MCP Server
+- 🔌 **DeepSeek Harness 插件**：将核心 PDF 处理能力封装为 DSH 工具插件/MCP Server  
+  → [AATINF/pdf-extractor-dsh-plugin](https://github.com/AATINF/pdf-extractor-dsh-plugin)（独立仓库，三条实现路径）
 - [ ] 应用内英文 UI 切换
-- [ ] CI 自动构建 Release（打 tag 即出单文件版）
-- [ ] GitHub Pages 在线试用镜像
+- [ ] GitHub Pages 在线试用镜像（可选，非核心）
 
 ---
 
