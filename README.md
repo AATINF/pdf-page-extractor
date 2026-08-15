@@ -2,7 +2,7 @@
 
 > **免安装 · 纯前端 · 离线可用** —— 在浏览器里选页、提取、拆分、合并 PDF，文件全程不离开你的设备。
 
-[📥 前往 Release 下载（单文件版，双击即用）](https://github.com/AATINF/pdf-page-extractor/releases/latest/download/PDF%E9%A1%B5%E9%9D%A2%E6%8F%90%E5%8F%96%E5%99%A8-%E5%8D%95%E6%96%87%E4%BB%B6%E7%89%88.html)  ·  [🌐 English](README.en.md)
+[📥 前往 Release 下载（单文件版，双击即用）](https://github.com/AATINF/pdf-page-extractor/releases/latest/download/pdf-page-extractor.html)  ·  [🌐 English](README.en.md)
 
 ---
 

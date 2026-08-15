@@ -2,7 +2,7 @@
 
 > **No install · Pure frontend · Works offline** —— Select, extract, split, and merge PDF pages right in your browser. Your files never leave your device.
 
-[📥 Download from Release (single-file build, double-click to run)](https://github.com/AATINF/pdf-page-extractor/releases/latest/download/PDF%E9%A1%B5%E9%9D%A2%E6%8F%90%E5%8F%96%E5%99%A8-%E5%8D%95%E6%96%87%E4%BB%B6%E7%89%88.html)  ·  [📘 中文文档](README.md)
+[📥 Download from Release (single-file build, double-click to run)](https://github.com/AATINF/pdf-page-extractor/releases/latest/download/pdf-page-extractor.html)  ·  [📘 中文文档](README.md)
 
 ---
 
