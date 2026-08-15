@@ -1,0 +1,15 @@
+{
+  "name": "PDF 页面提取器",
+  "short_name": "PDF提取",
+  "description": "在手机本地提取 PDF 页面、拆分单页、合并 PDF，文件不上传，离线可用。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1220",
+  "theme_color": "#2563eb",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
