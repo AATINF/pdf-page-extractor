@@ -1,8 +1,10 @@
 package com.aatinf.pdfextractor;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Intent;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
@@ -24,12 +26,12 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 
 /**
- * Saves a base64 payload into the public Downloads folder.
+ * Writes a base64 payload into the public Downloads folder, then lets the web
+ * layer open or share the saved file.
  *
- * Android WebView does not honour <a download> with blob: URLs, so the web layer
- * has to hand the bytes to native code. Android 10+ uses MediaStore (no runtime
- * permission needed); Android 7-9 falls back to the legacy external storage path
- * with WRITE_EXTERNAL_STORAGE.
+ * Android WebView ignores <a download> for blob: URLs, so the bytes have to
+ * cross the bridge. Android 10+ uses MediaStore (no runtime permission);
+ * Android 7-9 falls back to the legacy path plus WRITE_EXTERNAL_STORAGE.
  */
 @CapacitorPlugin(
     name = "FileSaver",
@@ -56,9 +58,7 @@ public class FileSaverPlugin extends Plugin {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             try {
-                String relPath = saveWithMediaStore(data, fileName, mime);
-                JSObject ret = new JSObject();
-                ret.put("path", relPath);
+                JSObject ret = saveWithMediaStore(data, fileName, mime);
                 call.resolve(ret);
             } catch (Exception e) {
                 call.reject("save failed: " + e.getMessage(), e);
@@ -83,7 +83,50 @@ public class FileSaverPlugin extends Plugin {
         }
     }
 
-    private String saveWithMediaStore(String base64, String fileName, String mime) throws Exception {
+    /** Hand the saved file to another app (WeChat, mail, cloud drive...). */
+    @PluginMethod
+    public void share(PluginCall call) {
+        String uriStr = call.getString("uri");
+        String mime = call.getString("mime", "application/pdf");
+        if (uriStr == null) {
+            call.reject("missing uri");
+            return;
+        }
+        try {
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType(mime);
+            intent.putExtra(Intent.EXTRA_STREAM, Uri.parse(uriStr));
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            getActivity().startActivity(Intent.createChooser(intent, "分享"));
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("share failed: " + e.getMessage(), e);
+        }
+    }
+
+    /** Open the saved file with whatever app handles that MIME type. */
+    @PluginMethod
+    public void openFile(PluginCall call) {
+        String uriStr = call.getString("uri");
+        String mime = call.getString("mime", "application/pdf");
+        if (uriStr == null) {
+            call.reject("missing uri");
+            return;
+        }
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(Uri.parse(uriStr), mime);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+            getActivity().startActivity(intent);
+            call.resolve();
+        } catch (ActivityNotFoundException e) {
+            call.reject("no app can open this file");
+        } catch (Exception e) {
+            call.reject("open failed: " + e.getMessage(), e);
+        }
+    }
+
+    private JSObject saveWithMediaStore(String base64, String fileName, String mime) throws Exception {
         byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
         ContentResolver resolver = getContext().getContentResolver();
 
@@ -105,7 +148,10 @@ public class FileSaverPlugin extends Plugin {
         done.put(MediaStore.Downloads.IS_PENDING, 0);
         resolver.update(uri, done, null, null);
 
-        return "Download/" + fileName;
+        JSObject ret = new JSObject();
+        ret.put("uri", uri.toString());
+        ret.put("displayPath", "Download/" + fileName);
+        return ret;
     }
 
     private void legacySave(PluginCall call, String base64, String fileName, String mime) {
@@ -122,14 +168,15 @@ public class FileSaverPlugin extends Plugin {
             MediaScannerConnection.scanFile(getContext(), new String[]{ out.getAbsolutePath() }, null, null);
 
             JSObject ret = new JSObject();
-            ret.put("path", out.getAbsolutePath());
+            ret.put("uri", Uri.fromFile(out).toString());
+            ret.put("displayPath", "Download/" + fileName);
             call.resolve(ret);
         } catch (Exception e) {
             call.reject("save failed: " + e.getMessage(), e);
         }
     }
 
-    /** Strip path separators so a crafted file name cannot escape the Downloads folder. */
+    /** Strip path separators so a crafted file name cannot escape Downloads. */
     private String sanitize(String name) {
         if (name == null) return null;
         String s = name.replace("\\", "_").replace("/", "_").trim();

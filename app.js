@@ -121,22 +121,53 @@ function blobToBase64(blob) {
  * @param {Blob} blob
  * @param {string} name 文件名
  */
+let lastSaved = null;   // { uri, name, mime }
+
 async function saveViaNative(blob, name) {
   if (blob.size > 60 * 1024 * 1024) toast('文件较大，保存可能需要几秒');
   showBusy('正在保存…');
   try {
     const data = await blobToBase64(blob);
-    await window.Capacitor.Plugins.FileSaver.save({
-      data,
-      fileName: name,
-      mime: blob.type || 'application/pdf'
-    });
+    const mime = blob.type || 'application/pdf';
+    const ret = await window.Capacitor.Plugins.FileSaver.save({ data, fileName: name, mime });
+    lastSaved = { uri: ret.uri, name, mime };
     hideBusy();
-    toast('已保存到「下载」：' + name, 3600);
+    showSaveSheet(name, ret.displayPath || ret.uri);
   } catch (e) {
     hideBusy();
     toast('保存失败：' + ((e && e.message) || e), 4000);
     throw e;
+  }
+}
+
+/** 弹出"已保存"面板，显示文件名与落盘位置。 */
+function showSaveSheet(name, path) {
+  $('#saveName').textContent = name;
+  $('#savePath').textContent = path || '';
+  $('#saveSheet').classList.remove('hidden');
+}
+
+function closeSaveSheet() {
+  $('#saveSheet').classList.add('hidden');
+}
+
+/** 用系统里能打开 PDF 的应用打开刚导出的文件。 */
+async function openSaved() {
+  if (!lastSaved) return;
+  try {
+    await window.Capacitor.Plugins.FileSaver.openFile({ uri: lastSaved.uri, mime: lastSaved.mime });
+  } catch (e) {
+    toast('没有找到能打开 PDF 的应用');
+  }
+}
+
+/** 调系统分享面板，把文件交给微信/邮件/网盘等。 */
+async function shareSaved() {
+  if (!lastSaved) return;
+  try {
+    await window.Capacitor.Plugins.FileSaver.share({ uri: lastSaved.uri, mime: lastSaved.mime });
+  } catch (e) {
+    toast('分享失败：' + ((e && e.message) || e));
   }
 }
 
@@ -491,6 +522,7 @@ function setupBackButton() {
   const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
   if (!IS_APP || !App) return;
   App.addListener('backButton', () => {
+    if (!$('#saveSheet').classList.contains('hidden')) { closeSaveSheet(); return; }
     if (!$('#previewModal').classList.contains('hidden')) { closePreview(); return; }
     if (!$('#dialog').classList.contains('hidden')) { finishDialog(null); return; }
     if (state.selection && state.selection.size) { selectNone(); return; }

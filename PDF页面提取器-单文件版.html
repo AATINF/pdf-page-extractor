@@ -459,6 +459,38 @@ main{max-width:760px;margin:0 auto;padding:0 12px}
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
 
+/* ---------- 保存结果面板 ---------- */
+.sheet{position:fixed;inset:0;z-index:90;display:flex;align-items:flex-end;justify-content:center}
+.sheet-mask{position:absolute;inset:0;background:rgba(8,11,16,.45);backdrop-filter:blur(2px)}
+.sheet-box{
+  position:relative;width:100%;max-width:520px;
+  background:var(--surface);
+  border-radius:22px 22px 0 0;
+  padding:20px 18px calc(18px + var(--safe-b));
+  box-shadow:0 -8px 40px rgba(0,0,0,.22);
+  animation:sheetUp .26s var(--ease);
+}
+.sheet-head{display:flex;gap:13px;align-items:flex-start}
+.sheet-check{
+  width:44px;height:44px;border-radius:50%;flex:0 0 auto;
+  background:#e7f6ec;color:#0f9d58;
+  display:flex;align-items:center;justify-content:center;
+}
+.sheet-check svg{
+  width:22px;height:22px;
+  fill:none;stroke:currentColor;stroke-width:2.8;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.sheet-info{flex:1;min-width:0}
+.sheet-title{font-size:15px;font-weight:650;color:var(--text);letter-spacing:-.01em}
+.sheet-name{margin-top:4px;font-size:13px;color:var(--text-2);word-break:break-all;line-height:1.4}
+.sheet-path{margin-top:2px;font-size:11.5px;color:var(--text-3);word-break:break-all}
+.sheet-actions{display:flex;gap:9px;margin-top:18px}
+.sheet-actions .btn{flex:1;height:48px}
+@media (prefers-color-scheme: dark){
+  .sheet-check{background:#12301f;color:#4ade80}
+}
+
 /* ---------- 动画 ---------- */
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -712,6 +744,26 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
   <div class="bt" id="busyText">处理中…</div>
 </div>
 
+<!-- 保存结果面板 -->
+<div class="sheet hidden" id="saveSheet">
+  <div class="sheet-mask" onclick="closeSaveSheet()"></div>
+  <div class="sheet-box">
+    <div class="sheet-head">
+      <div class="sheet-check"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></div>
+      <div class="sheet-info">
+        <div class="sheet-title">已保存到「下载」</div>
+        <div class="sheet-name" id="saveName">-</div>
+        <div class="sheet-path" id="savePath">-</div>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn" onclick="openSaved()">打开</button>
+      <button class="btn" onclick="shareSaved()">分享</button>
+      <button class="btn primary" onclick="closeSaveSheet()">完成</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -882,12 +934,90 @@ function fileNameBase(name) { return (name || 'output').replace(/\.pdf$/i, '') |
  * @param {string} name 下载文件名
  */
 function download(blob, name) {
+  // 安卓 App 里 WebView 不认 <a download> + blob:，必须交给原生写入系统「下载」目录
+  if (IS_APP && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.FileSaver) {
+    saveViaNative(blob, name);
+    return;
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = name;
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+
+/**
+ * Blob 转纯 base64（去掉 data: 前缀），供原生桥使用。
+ * @param {Blob} blob
+ * @returns {Promise<string>}
+ */
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const s = String(r.result || '');
+      const i = s.indexOf(',');
+      resolve(i >= 0 ? s.slice(i + 1) : s);
+    };
+    r.onerror = () => reject(r.error || new Error('读取文件失败'));
+    r.readAsDataURL(blob);
+  });
+}
+
+/**
+ * 通过原生桥把文件写进系统「下载」目录。
+ * @param {Blob} blob
+ * @param {string} name 文件名
+ */
+let lastSaved = null;   // { uri, name, mime }
+
+async function saveViaNative(blob, name) {
+  if (blob.size > 60 * 1024 * 1024) toast('文件较大，保存可能需要几秒');
+  showBusy('正在保存…');
+  try {
+    const data = await blobToBase64(blob);
+    const mime = blob.type || 'application/pdf';
+    const ret = await window.Capacitor.Plugins.FileSaver.save({ data, fileName: name, mime });
+    lastSaved = { uri: ret.uri, name, mime };
+    hideBusy();
+    showSaveSheet(name, ret.displayPath || ret.uri);
+  } catch (e) {
+    hideBusy();
+    toast('保存失败：' + ((e && e.message) || e), 4000);
+    throw e;
+  }
+}
+
+/** 弹出"已保存"面板，显示文件名与落盘位置。 */
+function showSaveSheet(name, path) {
+  $('#saveName').textContent = name;
+  $('#savePath').textContent = path || '';
+  $('#saveSheet').classList.remove('hidden');
+}
+
+function closeSaveSheet() {
+  $('#saveSheet').classList.add('hidden');
+}
+
+/** 用系统里能打开 PDF 的应用打开刚导出的文件。 */
+async function openSaved() {
+  if (!lastSaved) return;
+  try {
+    await window.Capacitor.Plugins.FileSaver.openFile({ uri: lastSaved.uri, mime: lastSaved.mime });
+  } catch (e) {
+    toast('没有找到能打开 PDF 的应用');
+  }
+}
+
+/** 调系统分享面板，把文件交给微信/邮件/网盘等。 */
+async function shareSaved() {
+  if (!lastSaved) return;
+  try {
+    await window.Capacitor.Plugins.FileSaver.share({ uri: lastSaved.uri, mime: lastSaved.mime });
+  } catch (e) {
+    toast('分享失败：' + ((e && e.message) || e));
+  }
 }
 
 /**
@@ -1231,6 +1361,22 @@ function initAppShell() {
   if (urlRow) urlRow.classList.add('hidden');
   const tip = document.querySelector('.dz-tip');
   if (tip) tip.textContent = '从手机文件管理器选择';
+}
+
+/**
+ * 安卓物理返回键：先关弹层，再清选中，最后才退出 App。
+ * 不加这段的话，用户按返回会直接杀掉进程。
+ */
+function setupBackButton() {
+  const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (!IS_APP || !App) return;
+  App.addListener('backButton', () => {
+    if (!$('#saveSheet').classList.contains('hidden')) { closeSaveSheet(); return; }
+    if (!$('#previewModal').classList.contains('hidden')) { closePreview(); return; }
+    if (!$('#dialog').classList.contains('hidden')) { finishDialog(null); return; }
+    if (state.selection && state.selection.size) { selectNone(); return; }
+    App.exitApp();
+  });
 }
 
 /**
@@ -1766,6 +1912,7 @@ function bindDrag(dz) {
 function init() {
   setupPdfjsWorker();
   initAppShell();
+  setupBackButton();
 
   // 底栏换行 / 旋转屏幕后高度会变，实时同步给 CSS
   if (window.ResizeObserver) {
@@ -1787,7 +1934,7 @@ function init() {
   // 支持 "打开方式" 传参（例如从系统分享到浏览器打开 ?file=... 场景可扩展，此处略）
 
   // 仅在 http/https 协议下注册 Service Worker，file:// 打开时自动跳过
-  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  if (!IS_APP && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     navigator.serviceWorker.register('./sw.js').catch(() => { /* 忽略 */ });
   }
 }
