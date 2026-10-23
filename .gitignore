@@ -1,3 +1,6 @@
 node_modules/
 *.log
 .DS_Store
+
+# 交付包不进仓库
+PDF提取器-手机版预览*.zip

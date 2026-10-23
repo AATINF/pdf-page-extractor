@@ -4,246 +4,578 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2563eb">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>PDF 页面提取器 v1.0.0</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
+/* ============================================================
+   PDF 页面提取器 · 视觉重构 v3（2026-10）
+   目标：从"网页"变成"工具型 App"
+   原则：少用色块、多用分隔线与层级、图标一律线性 SVG
+   ============================================================ */
+
 :root{
-  --bg:#f1f5f9; --card:#ffffff; --text:#0f172a; --sub:#64748b;
-  --brand:#2563eb; --brand2:#1d4ed8; --line:#e2e8f0;
-  --ok:#16a34a; --warn:#d97706; --danger:#dc2626;
-  --radius:14px; --shadow:0 1px 3px rgba(15,23,42,.08),0 4px 14px rgba(15,23,42,.06);
+  --bg:#f5f6f8;
+  --surface:#ffffff;
+  --surface-2:#eff1f4;
+  --line:#e8eaef;
+  --line-2:#d8dce4;
+  --text:#111827;
+  --text-2:#5b6472;
+  --text-3:#98a1b0;
+  --brand:#2563eb;
+  --brand-2:#1d4ed8;
+  --brand-soft:#eef4ff;
+  --danger:#dc2626;
+  --danger-soft:#fef2f2;
+  --warn:#b45309;
+  --warn-soft:#fffbeb;
+  --r-xl:18px; --r-lg:14px; --r-md:11px; --r-sm:8px;
+  --sh-1:0 1px 2px rgba(16,24,40,.05);
+  --sh-2:0 6px 20px rgba(16,24,40,.10);
+  --sh-brand:0 3px 10px rgba(37,99,235,.22);
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --bb-h:0px;
+  --ease:cubic-bezier(.22,.61,.36,1);
 }
+
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#0b1220; --card:#151e31; --text:#e2e8f0; --sub:#94a3b8;
-    --line:#273349; --brand:#3b82f6; --brand2:#2563eb;
-    --shadow:0 1px 3px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+    --bg:#0b0e13;
+    --surface:#151a21;
+    --surface-2:#1b2129;
+    --line:#232a34;
+    --line-2:#2f3742;
+    --text:#e7eaee;
+    --text-2:#9aa3b1;
+    --text-3:#69717e;
+    --brand:#4b82ff;
+    --brand-2:#3b6fe8;
+    --brand-soft:#16233b;
+    --danger:#f87171;
+    --danger-soft:#2a1416;
+    --warn:#fbbf24;
+    --warn-soft:#2a2110;
+    --sh-1:0 1px 2px rgba(0,0,0,.3);
+    --sh-2:0 8px 24px rgba(0,0,0,.45);
+    --sh-brand:0 4px 14px rgba(75,130,255,.22);
   }
 }
+
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body{margin:0;padding:0}
 body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-  background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:120px;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
+  background:var(--bg); color:var(--text);
+  min-height:100dvh;
+  padding-bottom:calc(20px + var(--safe-b));
+  overscroll-behavior-y:contain;
+  font-feature-settings:"tnum" 1;
+  -webkit-font-smoothing:antialiased;
 }
+body.has-bb{padding-bottom:calc(var(--bb-h) + 16px + var(--safe-b))}
+
 .hidden{display:none!important}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 input{font-family:inherit}
+button,label,summary{-webkit-user-select:none;user-select:none}
 
-/* ---------- header ---------- */
+/* ---------- 顶栏：白底细线，不再用大色块 ---------- */
 header{
   position:sticky;top:0;z-index:20;
-  background:linear-gradient(135deg,var(--brand),var(--brand2));
-  color:#fff;padding:14px 16px calc(14px + env(safe-area-inset-top));
-  box-shadow:0 2px 10px rgba(29,78,216,.35);
+  display:flex;align-items:center;gap:10px;
+  background:color-mix(in srgb,var(--surface) 92%,transparent);
+  backdrop-filter:blur(14px) saturate(180%);
+  -webkit-backdrop-filter:blur(14px) saturate(180%);
+  border-bottom:1px solid var(--line);
+  padding:calc(10px + var(--safe-t)) 16px 10px;
 }
-header h1{margin:0;font-size:18px;font-weight:700;letter-spacing:.5px}
-header .sub{margin-top:4px;font-size:12px;opacity:.92;word-break:break-all;line-height:1.4}
-.badge{
-  display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;
-  background:rgba(255,255,255,.2);font-size:11px;vertical-align:middle;
+header .h-icon{
+  width:30px;height:30px;border-radius:9px;flex:0 0 auto;
+  background:var(--brand);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--sh-brand);
 }
-.badge.warn{background:#fef3c7;color:#92400e}
-.badge.danger{background:#fee2e2;color:#991b1b}
+header .h-icon svg{width:17px;height:17px}
+header h1{
+  margin:0;font-size:16.5px;font-weight:650;letter-spacing:-.01em;
+  display:flex;align-items:center;gap:7px;min-width:0;
+}
+header h1 .badge{display:none}
+header .sub{display:none}
+header .h-right{margin-left:auto;display:flex;gap:6px}
+header .h-btn{
+  width:36px;height:36px;border-radius:10px;color:var(--text-2);
+  display:flex;align-items:center;justify-content:center;
+}
+header .h-btn:active{background:var(--surface-2)}
 
-/* ---------- tabs ---------- */
-.tabs{display:flex;gap:8px;padding:12px 16px 0;max-width:760px;margin:0 auto}
+/* ---------- 分段控件 ---------- */
+.tabs{
+  display:flex;gap:3px;padding:3px;
+  margin:12px 12px 0;
+  background:var(--surface-2);border-radius:12px;
+}
 .tab{
-  flex:1;padding:10px 0;text-align:center;font-size:14px;font-weight:600;
-  background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--sub);
-  box-shadow:var(--shadow);transition:.15s;
+  flex:1;height:36px;border-radius:9px;
+  font-size:13.5px;font-weight:600;color:var(--text-2);
+  background:transparent;border:none;
+  transition:background .18s var(--ease),color .18s var(--ease),box-shadow .18s var(--ease);
+  display:flex;align-items:center;justify-content:center;gap:6px;
 }
-.tab.active{background:var(--brand);border-color:var(--brand);color:#fff}
-
-main{max-width:760px;margin:0 auto;padding:12px 12px 0}
-
-/* ---------- card ---------- */
-.card-panel{
-  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-  box-shadow:var(--shadow);padding:14px;margin:12px 0;
+.tab svg{width:15px;height:15px;opacity:.85}
+.tab.active{
+  background:var(--surface);color:var(--text);
+  box-shadow:0 1px 3px rgba(16,24,40,.14),0 0 0 .5px rgba(16,24,40,.04);
 }
-.card-panel h3{margin:0 0 10px;font-size:13px;color:var(--sub);font-weight:600;letter-spacing:.5px}
+@media (prefers-color-scheme: dark){
+  .tab.active{background:#262e3a;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+}
 
-/* ---------- dropzone ---------- */
+main{max-width:760px;margin:0 auto;padding:0 12px}
+
+/* ---------- 空状态 ---------- */
 .dropzone{
-  border:2px dashed var(--line);border-radius:var(--radius);padding:38px 16px;text-align:center;
-  color:var(--sub);font-size:14px;background:var(--card);margin:12px 0;transition:.15s;
+  border:none;background:transparent;
+  padding:48px 16px 32px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;
 }
-.dropzone:active,.dropzone.hover{background:color-mix(in srgb,var(--brand) 8%,var(--card));border-color:var(--brand)}
-.dropzone .big{font-size:40px;margin-bottom:8px}
-.dropzone p{margin:4px 0}
+.dropzone .big{display:none}
+.dz-icon{
+  width:86px;height:86px;border-radius:26px;
+  background:var(--brand-soft);color:var(--brand);
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:18px;
+}
+.dz-icon svg{width:40px;height:40px}
+.dropzone .dz-title{
+  margin:0;font-size:17.5px;font-weight:650;letter-spacing:-.01em;color:var(--text);
+}
+.dropzone .dz-desc{
+  margin:7px 0 0;font-size:13px;line-height:1.55;color:var(--text-2);max-width:270px;
+}
+.dropzone .dz-cta{
+  margin-top:22px;width:100%;max-width:300px;height:50px;border-radius:13px;
+  background:var(--brand);color:#fff;font-size:15px;font-weight:650;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:var(--sh-brand);
+  transition:transform .12s var(--ease);
+}
+.dropzone .dz-cta:active{transform:scale(.975)}
+.dropzone .dz-cta svg{width:18px;height:18px}
+.dropzone .dz-foot{
+  margin-top:14px;font-size:11.5px;color:var(--text-3);letter-spacing:.01em;
+}
+.dropzone .dz-tip{display:none}
 
-/* ---------- file bar ---------- */
-.filebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+/* ---------- 卡片 ---------- */
+.card-panel{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--r-xl);
+  padding:14px;
+  margin:12px 0;
+  box-shadow:var(--sh-1);
+}
+.card-panel h3{
+  margin:0 0 11px;font-size:11px;font-weight:650;
+  letter-spacing:.075em;text-transform:uppercase;color:var(--text-3);
+}
+
+/* ---------- 文件信息条 ---------- */
+.filebar{display:flex;align-items:center;gap:11px}
 .filebar .fi{flex:1;min-width:0}
-.filebar .fname{font-weight:600;font-size:14px;word-break:break-all}
-.filebar .fmeta{font-size:12px;color:var(--sub);margin-top:2px}
-.btn{
-  padding:9px 14px;border-radius:10px;font-size:13px;font-weight:600;
-  background:var(--bg);border:1px solid var(--line);color:var(--text);transition:.12s;
+.filebar .fname{
+  font-size:15px;font-weight:650;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.btn:active{transform:scale(.97)}
-.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
-.btn.danger{background:#fee2e2;border-color:#fecaca;color:#b91c1c}
-.btn:disabled{opacity:.45;pointer-events:none}
+.filebar .fmeta{
+  margin-top:3px;font-size:12px;color:var(--text-3);
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+}
 
-/* ---------- quick range ---------- */
+/* ---------- 按钮 ---------- */
+.btn{
+  height:44px;padding:0 16px;border-radius:var(--r-md);
+  font-size:14px;font-weight:600;
+  background:var(--surface);border:1px solid var(--line-2);color:var(--text);
+  transition:transform .12s var(--ease),background .12s var(--ease);
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn:active{transform:scale(.975)}
+.btn.primary{
+  background:var(--brand);border-color:var(--brand);color:#fff;
+  box-shadow:var(--sh-brand);
+}
+.btn.danger{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
+.btn:disabled{opacity:.42;pointer-events:none;box-shadow:none}
+.btn svg{width:16px;height:16px}
+
+/* ---------- 输入 ---------- */
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .input{
-  flex:1;min-width:90px;padding:9px 10px;border-radius:10px;border:1px solid var(--line);
-  background:var(--bg);color:var(--text);font-size:14px;outline:none;
+  flex:1;min-width:90px;height:44px;padding:0 12px;
+  border-radius:var(--r-md);border:1px solid var(--line-2);
+  background:var(--surface-2);color:var(--text);
+  font-size:16px;outline:none;
+  transition:border-color .15s,background .15s;
 }
-.input:focus{border-color:var(--brand)}
-.input.num{flex:0 0 72px;min-width:56px;text-align:center}
-.lbl{font-size:13px;color:var(--sub);white-space:nowrap}
+.input:focus{border-color:var(--brand);background:var(--surface)}
+.input.num{flex:0 0 74px;min-width:60px;text-align:center;padding:0 6px}
+.lbl{font-size:12.5px;color:var(--text-3);white-space:nowrap;font-weight:500}
 
-/* ---------- tools ---------- */
-.chips{display:flex;gap:8px;flex-wrap:wrap}
+/* ---------- 芯片 ---------- */
+.chips{display:flex;gap:7px;flex-wrap:wrap}
 .chip{
-  padding:8px 12px;border-radius:99px;border:1px solid var(--line);background:var(--bg);
-  font-size:12.5px;font-weight:600;color:var(--text);transition:.12s;
+  height:36px;padding:0 13px;border-radius:99px;
+  border:1px solid var(--line-2);background:var(--surface);
+  font-size:12.5px;font-weight:600;color:var(--text-2);
+  display:inline-flex;align-items:center;gap:5px;
+  transition:all .15s var(--ease);
 }
 .chip:active{transform:scale(.96)}
-.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
-.chip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--line);margin-right:6px;vertical-align:1px}
-.chip.on .dot{background:#fff}
-.detail-settings{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
-.detail-settings summary{font-size:12.5px;color:var(--sub);cursor:pointer}
-.radio-row{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;font-size:13px}
-.radio-row label{display:flex;align-items:center;gap:5px;color:var(--text)}
-
-/* ---------- page grid ---------- */
-.hint{font-size:12px;color:var(--sub);margin:10px 2px 8px}
-.pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
-.card{
-  position:relative;background:var(--card);border:2px solid var(--line);border-radius:12px;
-  overflow:hidden;cursor:pointer;box-shadow:var(--shadow);transition:.12s;user-select:none;
+.chip svg{width:14px;height:14px}
+.chip.on{
+  background:var(--brand);border-color:var(--brand);color:#fff;
+  box-shadow:var(--sh-brand);
 }
-.card:active{transform:scale(.98)}
-.card.sel{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 30%,transparent)}
-.card .thumb{position:relative;background:var(--bg)}
+.chip .dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--line-2);margin-right:1px;
+}
+.chip.on .dot{background:#fff}
+
+/* ---------- 缩略图 ---------- */
+.pages{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:10px;padding:0 2px 6px;
+}
+.card{
+  position:relative;border-radius:var(--r-md);overflow:hidden;
+  border:1.5px solid var(--line);background:var(--surface);
+  transition:border-color .15s var(--ease),box-shadow .15s var(--ease),transform .12s var(--ease);
+}
+.card:active{transform:scale(.975)}
+.card.sel{
+  border-color:var(--brand);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 18%,transparent);
+}
+.card .thumb{position:relative;background:var(--surface-2)}
 .card canvas{display:block;width:100%;height:auto}
 .card .ph{
-  display:flex;align-items:center;justify-content:center;height:110px;
-  color:var(--sub);font-size:11px;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  height:104px;color:var(--text-3);font-size:11px;background:var(--surface-2);
 }
 .card-top{
-  position:absolute;inset:0;padding:6px;display:flex;justify-content:space-between;
-  pointer-events:none;align-items:flex-start;
+  position:absolute;inset:0;padding:5px;
+  display:flex;justify-content:space-between;align-items:flex-start;
+  pointer-events:none;
 }
+/* 三个角标各自定位，避免挤在一起 */
+.card-top .check{position:absolute;top:5px;left:5px}
+.card-top .pno{position:absolute;top:auto;right:5px;bottom:5px}
+.card-top .eye{position:absolute;top:5px;right:5px}
 .card-top .check{
-  width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.92);
-  border:2px solid var(--line);display:flex;align-items:center;justify-content:center;
-  font-size:13px;color:transparent;box-shadow:0 1px 3px rgba(0,0,0,.2);
+  width:22px;height:22px;border-radius:50%;
+  background:rgba(255,255,255,.94);
+  border:1.5px solid rgba(17,24,39,.12);
+  display:flex;align-items:center;justify-content:center;
+  color:transparent;
+  box-shadow:0 1px 3px rgba(16,24,40,.16);
+  transition:all .16s var(--ease);
 }
+.card-top .check svg{width:13px;height:13px}
 .card.sel .check{background:var(--brand);border-color:var(--brand);color:#fff}
 .card-top .pno{
-  font-size:12px;font-weight:700;background:rgba(255,255,255,.88);color:#334155;
-  padding:1px 8px;border-radius:99px;box-shadow:0 1px 3px rgba(0,0,0,.15);
+  font-size:10.5px;font-weight:700;letter-spacing:.02em;
+  background:rgba(255,255,255,.94);color:#4b5563;
+  padding:1px 7px;border-radius:6px;
+  box-shadow:0 1px 3px rgba(16,24,40,.13);
 }
 .card-top .eye{
-  pointer-events:auto;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.92);
-  display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 1px 3px rgba(0,0,0,.2);
+  pointer-events:auto;width:28px;height:28px;border-radius:50%;
+  background:rgba(255,255,255,.94);color:#4b5563;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 1px 3px rgba(16,24,40,.16);
 }
+.card-top .eye svg{width:15px;height:15px}
 .card .pno2{display:none}
 
-/* ---------- bottom bar ---------- */
+/* ---------- 底栏 ---------- */
 .bottombar{
   position:fixed;left:0;right:0;bottom:0;z-index:30;
-  background:color-mix(in srgb,var(--card) 92%,transparent);
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-  display:flex;align-items:center;gap:10px;
+  display:flex;align-items:center;gap:9px;
+  padding:8px 12px calc(8px + var(--safe-b));
+  background:color-mix(in srgb,var(--surface) 90%,transparent);
+  backdrop-filter:blur(18px) saturate(180%);
+  -webkit-backdrop-filter:blur(18px) saturate(180%);
+  border-top:1px solid var(--line);
 }
 .bb-info{flex:1;min-width:0}
-.bb-info .n{font-size:15px;font-weight:700}
-.bb-info .r{font-size:11px;color:var(--sub);word-break:break-all}
-.bb-btn{padding:12px 14px;border-radius:12px;font-size:13.5px;font-weight:700;white-space:nowrap}
-.bb-btn.sec{background:var(--bg);border:1px solid var(--line)}
-.bb-btn.primary{background:var(--brand);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.4)}
-
-/* ---------- merge ---------- */
-.merge-row{
-  display:flex;align-items:center;gap:8px;padding:10px 8px;border:1px solid var(--line);
-  border-radius:10px;margin-bottom:8px;background:var(--bg);
+.bb-info .n{font-size:13.5px;font-weight:700;letter-spacing:-.01em}
+.bb-info .r{font-size:11px;color:var(--text-3);margin-top:1px}
+.bb-btn{
+  height:50px;padding:0 16px;border-radius:13px;
+  font-size:14.5px;font-weight:650;white-space:nowrap;
+  transition:transform .12s var(--ease),filter .12s;
 }
-.merge-row .mr-name{flex:1;min-width:0;font-size:13px;font-weight:600;word-break:break-all}
-.merge-row .mr-badge{font-size:11px;color:var(--sub);white-space:nowrap}
+.bb-btn:active{transform:scale(.975)}
+.bb-btn.sec{background:var(--surface);border:1px solid var(--line-2);color:var(--text)}
+.bb-btn.primary{background:var(--brand);color:#fff;box-shadow:var(--sh-brand)}
+
+/* ---------- 合并列表 ---------- */
+.merge-row{
+  display:flex;align-items:center;gap:9px;
+  padding:10px 11px;border-radius:var(--r-md);
+  background:var(--surface-2);margin-bottom:8px;
+}
+.merge-row .mr-name{
+  flex:1;min-width:0;font-size:13px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.merge-row .mr-badge{font-size:11px;color:var(--text-3);white-space:nowrap}
 .merge-row .mr-btns{display:flex;gap:4px}
 .merge-row .mr-btns button{
-  width:30px;height:30px;border-radius:8px;background:var(--card);border:1px solid var(--line);
-  font-size:13px;color:var(--text);
+  width:34px;height:34px;border-radius:9px;
+  background:var(--surface);border:1px solid var(--line);
+  font-size:13px;color:var(--text-2);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .12s;
 }
-.merge-row .mr-btns button:active{transform:scale(.94)}
-.note{font-size:12px;color:var(--sub);line-height:1.6}
+.merge-row .mr-btns button:active{transform:scale(.93)}
+.note{font-size:12px;color:var(--text-3);line-height:1.65}
+.hint{font-size:12px;color:var(--text-3);margin:10px 2px 6px}
 
-/* ---------- modal (preview) ---------- */
+/* ---------- 高级设置 ---------- */
+.detail-settings{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.detail-settings summary{
+  font-size:12.5px;color:var(--text-2);cursor:pointer;font-weight:500;
+  list-style:none;display:flex;align-items:center;gap:6px;
+}
+.detail-settings summary::-webkit-details-marker{display:none}
+.detail-settings summary svg{width:13px;height:13px;transition:transform .18s var(--ease)}
+.detail-settings details[open] summary svg{transform:rotate(90deg)}
+.radio-row{display:flex;gap:16px;margin-top:11px;flex-wrap:wrap;font-size:13px}
+.radio-row label{display:flex;align-items:center;gap:6px;color:var(--text-2)}
+
+/* ---------- 徽章 ---------- */
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 8px;border-radius:99px;
+  font-size:11px;font-weight:600;
+  background:var(--surface-2);color:var(--text-2);
+}
+.badge.warn{background:var(--warn-soft);color:var(--warn)}
+.badge.danger{background:var(--danger-soft);color:var(--danger)}
+
+/* ---------- 预览 ---------- */
 .modal{
-  position:fixed;inset:0;z-index:50;background:rgba(2,6,23,.9);
+  position:fixed;inset:0;z-index:50;
+  background:#0a0d12;
   display:flex;flex-direction:column;
+  animation:fadeIn .16s ease-out;
 }
 .modal-bar{
-  display:flex;align-items:center;gap:8px;padding:10px 12px;color:#fff;
-  background:rgba(2,6,23,.6);flex-wrap:wrap;
+  display:flex;align-items:center;gap:8px;
+  padding:calc(8px + var(--safe-t)) 12px 8px;
+  color:#fff;
+  border-bottom:1px solid rgba(255,255,255,.07);
 }
-.modal-bar .m-title{flex:1;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.modal-bar .m-title{
+  flex:1;font-size:13px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
 .mbtn{
-  min-width:38px;height:34px;border-radius:9px;background:rgba(255,255,255,.14);
-  color:#fff;font-size:15px;padding:0 10px;font-weight:600;
+  min-width:40px;height:40px;border-radius:11px;
+  background:rgba(255,255,255,.12);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 10px;font-size:15px;font-weight:600;
+  transition:transform .12s;
 }
-.mbtn:active{transform:scale(.95)}
+.mbtn:active{transform:scale(.94)}
+.mbtn svg{width:17px;height:17px}
 .pv-wrap{
-  flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:12px;
-  -webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;
+  flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;
+  padding:12px;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;
 }
-.pv-wrap canvas{box-shadow:0 4px 30px rgba(0,0,0,.5);background:#fff;max-width:none}
+.pv-wrap canvas{
+  box-shadow:0 10px 44px rgba(0,0,0,.55);
+  background:#fff;max-width:none;border-radius:2px;
+  margin:auto;
+}
 
-/* ---------- dialog ---------- */
+/* ---------- 对话框 ---------- */
 .dialog{
-  position:fixed;inset:0;z-index:60;background:rgba(2,6,23,.55);
+  position:fixed;inset:0;z-index:60;
+  background:rgba(8,11,16,.5);
+  backdrop-filter:blur(2px);
   display:flex;align-items:center;justify-content:center;padding:24px;
 }
 .dialog-box{
-  width:100%;max-width:340px;background:var(--card);border-radius:16px;padding:18px;
-  box-shadow:0 20px 60px rgba(0,0,0,.35);
+  width:100%;max-width:340px;
+  background:var(--surface);border-radius:20px;padding:20px;
+  box-shadow:var(--sh-2);
+  animation:popIn .2s var(--ease);
 }
-.dialog-box h3{margin:0 0 6px;font-size:16px}
-.dialog-box .dmsg{font-size:13px;color:var(--sub);margin-bottom:12px}
-.dialog-box .dbtns{display:flex;gap:8px;margin-top:14px}
-.dialog-box .dbtns .btn{flex:1;padding:11px 0}
+.dialog-box h3{margin:0 0 6px;font-size:16px;font-weight:650}
+.dialog-box .dmsg{font-size:13px;color:var(--text-2);margin-bottom:14px;line-height:1.5}
+.dialog-box .dbtns{display:flex;gap:9px;margin-top:16px}
+.dialog-box .dbtns .btn{flex:1}
 
-/* ---------- busy overlay ---------- */
+/* ---------- 进度 ---------- */
 .busy{
-  position:fixed;inset:0;z-index:70;background:rgba(2,6,23,.55);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;
+  position:fixed;inset:0;z-index:70;
+  background:rgba(8,11,16,.55);
+  backdrop-filter:blur(3px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;color:#fff;
 }
-.spinner{width:42px;height:42px;border-radius:50%;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;animation:spin .8s linear infinite}
+.spinner{
+  width:36px;height:36px;border-radius:50%;
+  border:3px solid rgba(255,255,255,.22);border-top-color:#fff;
+  animation:spin .75s linear infinite;
+}
 @keyframes spin{to{transform:rotate(360deg)}}
-.busy .bt{font-size:14px;font-weight:600}
+.busy .bt{font-size:13.5px;font-weight:600}
 
-/* ---------- toast ---------- */
+/* ---------- 提示 ---------- */
 .toast{
-  position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(16px);
-  background:rgba(15,23,42,.94);color:#fff;padding:10px 18px;border-radius:99px;
-  font-size:13px;z-index:80;opacity:0;pointer-events:none;transition:.22s;max-width:86vw;text-align:center;
+  position:fixed;left:50%;
+  bottom:calc(var(--bb-h) + 18px + var(--safe-b));
+  transform:translateX(-50%) translateY(10px) scale(.96);
+  background:rgba(17,24,39,.95);color:#fff;
+  padding:10px 18px;border-radius:12px;
+  font-size:13px;z-index:80;opacity:0;pointer-events:none;
+  transition:all .24s var(--ease);
+  max-width:86vw;text-align:center;
+  box-shadow:0 8px 24px rgba(0,0,0,.28);
 }
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+
+/* ---------- 动画 ---------- */
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes sheetUp{from{transform:translateY(26px);opacity:.5}to{transform:none;opacity:1}}
+
+/* ---------- 手机竖屏 ---------- */
+@media (max-width:480px){
+  .pages{grid-template-columns:repeat(3,1fr);gap:8px}
+  header{padding:calc(9px + var(--safe-t)) 14px 9px}
+  main{padding:0 10px}
+  .tabs{margin:11px 10px 0}
+  .card-panel{border-radius:16px;padding:13px}
+
+  .bottombar{flex-wrap:wrap;row-gap:8px;padding:8px 10px calc(8px + var(--safe-b))}
+  .bb-info{flex:0 0 100%;display:flex;align-items:baseline;gap:8px}
+  .bb-info .n{font-size:13px;white-space:nowrap}
+  .bb-info .r{flex:1;min-width:0;margin-top:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bb-btn{flex:1 1 0;height:52px;font-size:15px;padding:0 6px}
+  .bb-btn.sec{flex:0 0 38%;font-size:13.5px}
+
+  .dialog{align-items:flex-end;padding:0}
+  .dialog-box{
+    max-width:none;border-radius:22px 22px 0 0;
+    padding:20px 16px calc(20px + var(--safe-b));
+    animation:sheetUp .24s var(--ease);
+  }
+  .dropzone{padding:40px 14px 28px}
+}
+
+/* ---------- 横屏 / 平板 ---------- */
+@media (min-width:481px) and (max-width:900px){
+  .pages{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+}
+
+/* ---------- 桌面 ---------- */
+@media (min-width:901px){
+  .pages{grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}
+  .bottombar{
+    width:100%;max-width:784px;
+    left:50%;right:auto;transform:translateX(-50%);
+    border-radius:16px 16px 0 0;
+  }
+}
+
+/* ---------- 深色补丁：缩略图上的白色浮层 ---------- */
+@media (prefers-color-scheme: dark){
+  .card-top .check,
+  .card-top .pno,
+  .card-top .eye{
+    background:rgba(21,26,33,.92);
+    color:#c9d0da;
+    border-color:rgba(255,255,255,.1);
+    box-shadow:0 1px 3px rgba(0,0,0,.5);
+  }
+  .card.sel .check{background:var(--brand);border-color:var(--brand);color:#fff}
+  .dropzone .dz-icon{background:var(--brand-soft)}
+  .toast{background:rgba(38,46,58,.97)}
+  .merge-row{background:var(--surface-2)}
+}
+
+/* ---------- 图标统一线性风格 ---------- */
+.h-icon svg,.tab svg,.chip svg,.mbtn svg,.dz-cta svg,.card-top svg,
+.detail-settings summary svg,.filebar svg,.btn svg{
+  fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.card-top .check svg{stroke-width:2.6}
+
+/* ---------- v3.1 修正 ---------- */
+.dz-icon svg{
+  fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.dropzone{min-height:calc(100dvh - 200px);justify-content:center;padding:20px 16px}
+header{padding:calc(11px + var(--safe-t)) 16px 11px}
+.filebar .btn{height:36px;padding:0 13px;font-size:13px;border-radius:10px}
+#urlRow{opacity:.9}
+#urlRow p{font-size:11.5px!important;line-height:1.55;margin:0 0 9px!important;color:var(--text-3)!important}
+#urlRow .btn{height:44px}
+/* 空状态里的链接入口 */
+#urlRow{
+  margin-top:26px;width:100%;max-width:340px;
+  padding-top:18px;border-top:1px solid var(--line);
+}
+#urlRow p{font-size:12px!important;color:var(--text-3)!important;margin:0 0 8px!important}
+#urlRow .row{justify-content:center}
+
 </style>
 </head>
 <body>
 
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+<symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></symbol>
+<symbol id="i-doc-plus" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6"/><path d="M9 15h6"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+<symbol id="i-merge" viewBox="0 0 24 24"><rect x="3" y="3" width="12" height="15" rx="2"/><path d="M8 21h9a2 2 0 0 0 2-2V9"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+<symbol id="i-check-square" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12l3 3 5-6"/></symbol>
+<symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+<symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+</svg>
+
 <header>
-  <h1>📄 PDF 页面提取器 <span class="badge" id="verTag">v1.0.0</span></h1>
+  <div class="h-icon"><svg viewBox="0 0 24 24"><use href="#i-doc"/></svg></div>
+  <h1>PDF 页面提取器 <span class="badge" id="verTag">v1.0.0</span></h1>
   <div class="sub" id="fileInfo">选择或打开一个 PDF，勾选页面后提取为新文件（全程本地处理，文件不会上传）</div>
 </header>
 
 <div class="tabs">
-  <button class="tab active" id="tabSingle" onclick="switchMode('single')">提取页面</button>
-  <button class="tab" id="tabMerge" onclick="switchMode('merge')">合并 PDF</button>
+  <button class="tab active" id="tabSingle" onclick="switchMode('single')"><svg viewBox="0 0 24 24"><use href="#i-doc"/></svg>提取页面</button>
+  <button class="tab" id="tabMerge" onclick="switchMode('merge')"><svg viewBox="0 0 24 24"><use href="#i-merge"/></svg>合并 PDF</button>
 </div>
 
 <main>
@@ -252,16 +584,20 @@ main{max-width:760px;margin:0 auto;padding:12px 12px 0}
   <section id="panelSingle">
 
     <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
-      <div class="big">📂</div>
-      <p><b>点击选择 PDF 文件</b></p>
-      <p>或拖拽到此处 · 支持打开本地文件</p>
+      <div class="dz-icon"><svg viewBox="0 0 24 24"><use href="#i-doc-plus"/></svg></div>
+      <p class="dz-title">选择一个 PDF 文件</p>
+      <p class="dz-desc">勾选任意页面提取为新 PDF，也可以拆分单页、多文件合并</p>
+      <button class="dz-cta" onclick="event.stopPropagation();document.getElementById('fileInput').click()"><svg viewBox="0 0 24 24"><use href="#i-folder"/></svg>选择 PDF</button>
+      <p class="dz-foot">全程在本机处理 · 文件不会上传</p>
       <input type="file" id="fileInput" accept="application/pdf,.pdf" class="hidden">
-      <p style="margin-top:10px;color:var(--sub);font-size:12px">也可以从链接打开：</p>
-      <div class="row" style="max-width:420px;margin:0 auto">
-        <input class="input" id="urlInput" placeholder="https://example.com/文件.pdf">
-        <button class="btn primary" onclick="openUrl()">打开</button>
+      <div id="urlRow">
+        <p style="margin-top:10px;color:var(--sub);font-size:12px">也可以从链接打开：</p>
+        <div class="row" style="max-width:420px;margin:0 auto">
+          <input class="input" id="urlInput" placeholder="https://example.com/文件.pdf">
+          <button class="btn primary" onclick="openUrl()">打开</button>
+        </div>
+        <p style="margin-top:8px;font-size:11px;opacity:.75">链接需允许跨域，否则请先下载再打开</p>
       </div>
-      <p style="margin-top:8px;font-size:11px;opacity:.75">⚠️ 链接需允许跨域访问，否则请在浏览器中先下载再打开</p>
     </div>
 
     <div class="card-panel hidden" id="filePanel">
@@ -278,7 +614,7 @@ main{max-width:760px;margin:0 auto;padding:12px 12px 0}
 
       <div class="detail-settings">
         <details>
-          <summary>⚙️ 高级设置（加密 / 图片化输出时生效）</summary>
+          <summary><svg viewBox="0 0 24 24"><use href="#i-chevron"/></svg>高级设置（加密 / 图片化输出时生效）</summary>
           <div class="radio-row">
             <label><input type="radio" name="quality" value="2" checked> 清晰度：普通</label>
             <label><input type="radio" name="quality" value="3"> 清晰度：高清</label>
@@ -309,10 +645,10 @@ main{max-width:760px;margin:0 auto;padding:12px 12px 0}
 
     <div class="card-panel hidden" id="toolsPanel">
       <div class="chips">
-        <button class="chip" onclick="selectAll()">☑ 全选</button>
+        <button class="chip" onclick="selectAll()"><svg viewBox="0 0 24 24"><use href="#i-check-square"/></svg>全选</button>
         <button class="chip" onclick="selectNone()">全不选</button>
         <button class="chip" onclick="invertSelect()">反选</button>
-        <button class="chip" onclick="rotateSelected()">⟳ 旋转90°(选中页)</button>
+        <button class="chip" onclick="rotateSelected()"><svg viewBox="0 0 24 24"><use href="#i-rotate"/></svg>旋转 90°</button>
         <button class="chip" id="reverseChip" onclick="toggleReverse()"><span class="dot"></span>倒序提取</button>
       </div>
       <p class="hint" id="rangeHint" style="margin-top:10px"></p>
@@ -341,18 +677,18 @@ main{max-width:760px;margin:0 auto;padding:12px 12px 0}
     <div class="n" id="selCount">0 / 0</div>
     <div class="r" id="rangeHint2">未选择页面</div>
   </div>
-  <button class="bb-btn sec" id="splitBtn" onclick="splitZip()" disabled>拆分为单页 ZIP</button>
-  <button class="bb-btn primary" id="extractBtn" onclick="extractPdf()" disabled>提取为 PDF</button>
+  <button class="bb-btn sec" id="splitBtn" onclick="splitZip()" disabled>拆分单页</button>
+  <button class="bb-btn primary" id="extractBtn" onclick="extractPdf()" disabled>提取 PDF</button>
 </div>
 
 <!-- 预览 -->
 <div class="modal hidden" id="previewModal">
   <div class="modal-bar">
-    <button class="mbtn" onclick="closePreview()">✕</button>
+    <button class="mbtn" onclick="closePreview()"><svg viewBox="0 0 24 24"><use href="#i-x"/></svg></button>
     <span class="m-title" id="pvTitle">预览</span>
-    <button class="mbtn" onclick="pvZoom(-1)">－</button>
-    <button class="mbtn" onclick="pvZoom(1)">＋</button>
-    <button class="mbtn" onclick="pvRotate()">⟳</button>
+    <button class="mbtn" onclick="pvZoom(-1)"><svg viewBox="0 0 24 24"><use href="#i-minus"/></svg></button>
+    <button class="mbtn" onclick="pvZoom(1)"><svg viewBox="0 0 24 24"><use href="#i-plus"/></svg></button>
+    <button class="mbtn" onclick="pvRotate()"><svg viewBox="0 0 24 24"><use href="#i-rotate"/></svg></button>
   </div>
   <div class="pv-wrap" id="pvWrap"><canvas id="pvCanvas"></canvas></div>
 </div>
@@ -763,6 +1099,7 @@ function buildSingleView() {
   $('#dropzone').classList.add('hidden');
   $('#pageList').classList.remove('hidden');
   $('#bottombar').classList.remove('hidden');
+  syncBottomBar();
 
   state.selection = new Set();
   state.rotation = new Map();
@@ -798,9 +1135,9 @@ function makeCard(n) {
   card.innerHTML =
     '<div class="thumb"><canvas></canvas><div class="ph">加载中…</div></div>' +
     '<div class="card-top">' +
-      '<span class="check">✓</span>' +
+      '<span class="check"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></span>' +
       '<span class="pno">' + n + '</span>' +
-      '<button class="eye" data-act="preview" title="预览">👁</button>' +
+      '<button class="eye" data-act="preview" title="预览"><svg viewBox="0 0 24 24"><use href="#i-eye"/></svg></button>' +
     '</div>';
   // 点击卡片主体切换勾选；点击眼睛图标进入全屏预览
   card.addEventListener('click', e => {
@@ -867,6 +1204,36 @@ function addToSelection(n) {
 }
 
 /**
+ * 是否为 Capacitor 原生壳（安卓 App）环境。
+ * 在浏览器里访问时为 false，所有逻辑保持原样。
+ */
+const IS_APP = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+
+/**
+ * 同步底栏状态：把实际高度写进 CSS 变量 --bb-h，并按可见性切换 body.has-bb。
+ * 底栏会随屏宽换行而变高，所以不能用固定值，必须实测。
+ */
+function syncBottomBar() {
+  const bb = $('#bottombar');
+  const visible = !!bb && !bb.classList.contains('hidden');
+  const h = visible ? bb.offsetHeight : 0;
+  document.documentElement.style.setProperty('--bb-h', h + 'px');
+  document.body.classList.toggle('has-bb', visible);
+}
+
+/**
+ * App 环境专属调整：离线场景下隐藏"从链接打开"，避免误导用户以为能联网。
+ */
+function initAppShell() {
+  if (!IS_APP) return;
+  document.documentElement.classList.add('is-app');
+  const urlRow = $('#urlRow');
+  if (urlRow) urlRow.classList.add('hidden');
+  const tip = document.querySelector('.dz-tip');
+  if (tip) tip.textContent = '从手机文件管理器选择';
+}
+
+/**
  * 刷新底部操作栏：显示已选页数、所选页码摘要，并控制提取/拆分按钮可用性。
  */
 function updateBottomBar() {
@@ -877,6 +1244,7 @@ function updateBottomBar() {
   const r = rangesOf(state.selection) || '未选择页面';
   $('#rangeHint').textContent = '已选页面：' + r;
   $('#rangeHint2').textContent = r;
+  syncBottomBar();
 }
 
 /* ---------------- 选择工具 ---------------- */
@@ -1397,6 +1765,12 @@ function bindDrag(dz) {
  */
 function init() {
   setupPdfjsWorker();
+  initAppShell();
+
+  // 底栏换行 / 旋转屏幕后高度会变，实时同步给 CSS
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => syncBottomBar()).observe($('#bottombar'));
+  }
 
   $('#fileInput').addEventListener('change', onPickFile);
   $('#mergeInput').addEventListener('change', onMergeFiles);

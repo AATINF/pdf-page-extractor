@@ -302,6 +302,7 @@ function buildSingleView() {
   $('#dropzone').classList.add('hidden');
   $('#pageList').classList.remove('hidden');
   $('#bottombar').classList.remove('hidden');
+  syncBottomBar();
 
   state.selection = new Set();
   state.rotation = new Map();
@@ -337,9 +338,9 @@ function makeCard(n) {
   card.innerHTML =
     '<div class="thumb"><canvas></canvas><div class="ph">加载中…</div></div>' +
     '<div class="card-top">' +
-      '<span class="check">✓</span>' +
+      '<span class="check"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></span>' +
       '<span class="pno">' + n + '</span>' +
-      '<button class="eye" data-act="preview" title="预览">👁</button>' +
+      '<button class="eye" data-act="preview" title="预览"><svg viewBox="0 0 24 24"><use href="#i-eye"/></svg></button>' +
     '</div>';
   // 点击卡片主体切换勾选；点击眼睛图标进入全屏预览
   card.addEventListener('click', e => {
@@ -406,6 +407,36 @@ function addToSelection(n) {
 }
 
 /**
+ * 是否为 Capacitor 原生壳（安卓 App）环境。
+ * 在浏览器里访问时为 false，所有逻辑保持原样。
+ */
+const IS_APP = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+
+/**
+ * 同步底栏状态：把实际高度写进 CSS 变量 --bb-h，并按可见性切换 body.has-bb。
+ * 底栏会随屏宽换行而变高，所以不能用固定值，必须实测。
+ */
+function syncBottomBar() {
+  const bb = $('#bottombar');
+  const visible = !!bb && !bb.classList.contains('hidden');
+  const h = visible ? bb.offsetHeight : 0;
+  document.documentElement.style.setProperty('--bb-h', h + 'px');
+  document.body.classList.toggle('has-bb', visible);
+}
+
+/**
+ * App 环境专属调整：离线场景下隐藏"从链接打开"，避免误导用户以为能联网。
+ */
+function initAppShell() {
+  if (!IS_APP) return;
+  document.documentElement.classList.add('is-app');
+  const urlRow = $('#urlRow');
+  if (urlRow) urlRow.classList.add('hidden');
+  const tip = document.querySelector('.dz-tip');
+  if (tip) tip.textContent = '从手机文件管理器选择';
+}
+
+/**
  * 刷新底部操作栏：显示已选页数、所选页码摘要，并控制提取/拆分按钮可用性。
  */
 function updateBottomBar() {
@@ -416,6 +447,7 @@ function updateBottomBar() {
   const r = rangesOf(state.selection) || '未选择页面';
   $('#rangeHint').textContent = '已选页面：' + r;
   $('#rangeHint2').textContent = r;
+  syncBottomBar();
 }
 
 /* ---------------- 选择工具 ---------------- */
@@ -936,6 +968,12 @@ function bindDrag(dz) {
  */
 function init() {
   setupPdfjsWorker();
+  initAppShell();
+
+  // 底栏换行 / 旋转屏幕后高度会变，实时同步给 CSS
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => syncBottomBar()).observe($('#bottombar'));
+  }
 
   $('#fileInput').addEventListener('change', onPickFile);
   $('#mergeInput').addEventListener('change', onMergeFiles);
