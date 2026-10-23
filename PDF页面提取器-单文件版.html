@@ -353,17 +353,63 @@ main{max-width:760px;margin:0 auto;padding:0 12px}
 .note{font-size:12px;color:var(--text-3);line-height:1.65}
 .hint{font-size:12px;color:var(--text-3);margin:10px 2px 6px}
 
-/* ---------- 高级设置 ---------- */
-.detail-settings{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
-.detail-settings summary{
-  font-size:12.5px;color:var(--text-2);cursor:pointer;font-weight:500;
-  list-style:none;display:flex;align-items:center;gap:6px;
+/* ---------- 导出设置（仅加密 PDF 出现） ---------- */
+.detail-settings{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.es-note{
+  display:flex;gap:8px;align-items:flex-start;
+  font-size:11.5px;line-height:1.5;color:var(--warn);
+  background:var(--warn-soft);border-radius:10px;
+  padding:9px 11px;margin-bottom:14px;
 }
-.detail-settings summary::-webkit-details-marker{display:none}
-.detail-settings summary svg{width:13px;height:13px;transition:transform .18s var(--ease)}
-.detail-settings details[open] summary svg{transform:rotate(90deg)}
-.radio-row{display:flex;gap:16px;margin-top:11px;flex-wrap:wrap;font-size:13px}
-.radio-row label{display:flex;align-items:center;gap:6px;color:var(--text-2)}
+.es-note svg{width:15px;height:15px;flex:0 0 auto;margin-top:1px}
+.es-row{display:flex;align-items:center;gap:11px;margin-bottom:11px}
+.es-row:last-child{margin-bottom:0}
+.es-label{font-size:12px;color:var(--text-3);width:44px;flex:0 0 auto;font-weight:500}
+
+/* ---------- 小号分段控件 ---------- */
+.seg{display:flex;gap:3px;padding:3px;background:var(--surface-2);border-radius:11px;flex:1;min-width:0}
+.seg-item{
+  flex:1;min-width:0;padding:7px 4px;border-radius:8px;border:none;background:transparent;
+  font-size:12.5px;font-weight:600;color:var(--text-2);
+  display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.25;
+  transition:background .16s var(--ease),box-shadow .16s var(--ease),color .16s var(--ease);
+}
+.seg-item em{font-style:normal;font-size:9.5px;font-weight:500;color:var(--text-3);letter-spacing:.02em}
+.seg-item.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(16,24,40,.13)}
+@media (prefers-color-scheme: dark){
+  .seg-item.active{background:#262e3a;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+}
+
+/* ---------- 工具条 ---------- */
+.tool-group{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.tool-label{
+  font-size:11px;font-weight:650;color:var(--text-3);
+  letter-spacing:.06em;width:30px;flex:0 0 auto;
+}
+.tool-btns{display:flex;gap:7px;flex:1;min-width:0}
+.tbtn{
+  flex:1;min-width:0;height:38px;padding:0 8px;border-radius:10px;
+  border:1px solid var(--line-2);background:var(--surface);
+  font-size:12.5px;font-weight:600;color:var(--text-2);
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  transition:all .15s var(--ease);
+}
+.tbtn:active{transform:scale(.97)}
+.tbtn svg{width:14px;height:14px;flex:0 0 auto}
+.tbtn:disabled{opacity:.4;pointer-events:none}
+.tbtn.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.switch-btn{gap:7px}
+.switch-btn .sw{
+  width:32px;height:19px;border-radius:99px;background:var(--line-2);
+  position:relative;transition:background .18s var(--ease);flex:0 0 auto;
+}
+.switch-btn .sw i{
+  position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;
+  background:#fff;transition:transform .18s var(--ease);
+  box-shadow:0 1px 2px rgba(0,0,0,.2);
+}
+.switch-btn.on .sw{background:var(--brand)}
+.switch-btn.on .sw i{transform:translateX(13px)}
 
 /* ---------- 徽章 ---------- */
 .badge{
@@ -374,6 +420,7 @@ main{max-width:760px;margin:0 auto;padding:0 12px}
 }
 .badge.warn{background:var(--warn-soft);color:var(--warn)}
 .badge.danger{background:var(--danger-soft);color:var(--danger)}
+.badge svg{width:11px;height:11px;stroke-width:2}
 
 /* ---------- 预览 ---------- */
 .modal{
@@ -460,33 +507,34 @@ main{max-width:760px;margin:0 auto;padding:0 12px}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
 
 /* ---------- 保存结果面板 ---------- */
-.sheet{position:fixed;inset:0;z-index:90;display:flex;align-items:flex-end;justify-content:center}
-.sheet-mask{position:absolute;inset:0;background:rgba(8,11,16,.45);backdrop-filter:blur(2px)}
+.sheet{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:26px}
+.sheet-mask{position:absolute;inset:0;background:rgba(8,11,16,.55);backdrop-filter:blur(3px)}
 .sheet-box{
-  position:relative;width:100%;max-width:520px;
+  position:relative;width:100%;max-width:330px;
   background:var(--surface);
-  border-radius:22px 22px 0 0;
-  padding:20px 18px calc(18px + var(--safe-b));
-  box-shadow:0 -8px 40px rgba(0,0,0,.22);
-  animation:sheetUp .26s var(--ease);
+  border-radius:22px;
+  padding:26px 20px 20px;
+  box-shadow:0 24px 70px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.04) inset;
+  animation:popIn .24s var(--ease);
 }
-.sheet-head{display:flex;gap:13px;align-items:flex-start}
+.sheet-head{display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px}
 .sheet-check{
-  width:44px;height:44px;border-radius:50%;flex:0 0 auto;
+  width:56px;height:56px;border-radius:50%;flex:0 0 auto;
   background:#e7f6ec;color:#0f9d58;
   display:flex;align-items:center;justify-content:center;
 }
 .sheet-check svg{
-  width:22px;height:22px;
+  width:28px;height:28px;
   fill:none;stroke:currentColor;stroke-width:2.8;
   stroke-linecap:round;stroke-linejoin:round;
 }
-.sheet-info{flex:1;min-width:0}
-.sheet-title{font-size:15px;font-weight:650;color:var(--text);letter-spacing:-.01em}
-.sheet-name{margin-top:4px;font-size:13px;color:var(--text-2);word-break:break-all;line-height:1.4}
-.sheet-path{margin-top:2px;font-size:11.5px;color:var(--text-3);word-break:break-all}
-.sheet-actions{display:flex;gap:9px;margin-top:18px}
-.sheet-actions .btn{flex:1;height:48px}
+.sheet-info{width:100%;min-width:0}
+.sheet-title{font-size:16px;font-weight:650;color:var(--text);letter-spacing:-.01em}
+.sheet-name{margin-top:6px;font-size:13px;color:var(--text-2);word-break:break-all;line-height:1.45}
+.sheet-path{margin-top:3px;font-size:11.5px;color:var(--text-3);word-break:break-all}
+.sheet-actions{display:flex;gap:9px;margin-top:22px;flex-wrap:wrap}
+.sheet-actions .btn{flex:1 1 calc(50% - 5px);height:46px}
+.sheet-actions .btn.primary{flex:1 1 100%}
 @media (prefers-color-scheme: dark){
   .sheet-check{background:#12301f;color:#4ade80}
 }
@@ -553,8 +601,8 @@ main{max-width:760px;margin:0 auto;padding:0 12px}
 }
 
 /* ---------- 图标统一线性风格 ---------- */
-.h-icon svg,.tab svg,.chip svg,.mbtn svg,.dz-cta svg,.card-top svg,
-.detail-settings summary svg,.filebar svg,.btn svg{
+/* 全站图标统一线性风格：不再逐个列举选择器，避免新加图标时漏掉导致渲染成实心块 */
+svg{
   fill:none;stroke:currentColor;stroke-width:1.8;
   stroke-linecap:round;stroke-linejoin:round;
 }
@@ -596,6 +644,8 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
 <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
 <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
 <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
 </svg>
 
@@ -638,24 +688,31 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
           <div class="fname" id="fileName">-</div>
           <div class="fmeta">
             <span id="pageCount">-</span>
-            <span class="badge danger hidden" id="encryptedBadge">🔒 已加密（提取时将转为图片）</span>
+            <span class="badge danger hidden" id="encryptedBadge"><svg viewBox="0 0 24 24"><use href="#i-lock"/></svg>已加密</span>
           </div>
         </div>
         <button class="btn" onclick="document.getElementById('fileInput').click()">更换文件</button>
       </div>
 
-      <div class="detail-settings">
-        <details>
-          <summary><svg viewBox="0 0 24 24"><use href="#i-chevron"/></svg>高级设置（加密 / 图片化输出时生效）</summary>
-          <div class="radio-row">
-            <label><input type="radio" name="quality" value="2" checked> 清晰度：普通</label>
-            <label><input type="radio" name="quality" value="3"> 清晰度：高清</label>
+      <div class="detail-settings hidden" id="exportSettings">
+        <div class="es-note">
+          <svg viewBox="0 0 24 24"><use href="#i-info"/></svg>
+          <span>此 PDF 已加密，页面将转为图片导出，可调整画质</span>
+        </div>
+        <div class="es-row">
+          <span class="es-label">清晰度</span>
+          <div class="seg" data-name="quality">
+            <button type="button" class="seg-item active" data-value="2">普通<em>144 DPI</em></button>
+            <button type="button" class="seg-item" data-value="3">高清<em>216 DPI</em></button>
           </div>
-          <div class="radio-row">
-            <label><input type="radio" name="imgfmt" value="jpeg" checked> 图片格式：JPEG（体积小）</label>
-            <label><input type="radio" name="imgfmt" value="png"> 图片格式：PNG（更清晰）</label>
+        </div>
+        <div class="es-row">
+          <span class="es-label">格式</span>
+          <div class="seg" data-name="imgfmt">
+            <button type="button" class="seg-item active" data-value="jpeg">JPEG<em>体积小</em></button>
+            <button type="button" class="seg-item" data-value="png">PNG<em>无损</em></button>
           </div>
-        </details>
+        </div>
       </div>
     </div>
 
@@ -676,14 +733,26 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
     </div>
 
     <div class="card-panel hidden" id="toolsPanel">
-      <div class="chips">
-        <button class="chip" onclick="selectAll()"><svg viewBox="0 0 24 24"><use href="#i-check-square"/></svg>全选</button>
-        <button class="chip" onclick="selectNone()">全不选</button>
-        <button class="chip" onclick="invertSelect()">反选</button>
-        <button class="chip" onclick="rotateSelected()"><svg viewBox="0 0 24 24"><use href="#i-rotate"/></svg>旋转 90°</button>
-        <button class="chip" id="reverseChip" onclick="toggleReverse()"><span class="dot"></span>倒序提取</button>
+      <div class="tool-group">
+        <span class="tool-label">选择</span>
+        <div class="tool-btns">
+          <button class="tbtn" onclick="selectAll()"><svg viewBox="0 0 24 24"><use href="#i-check-square"/></svg>全选</button>
+          <button class="tbtn" onclick="invertSelect()">反选</button>
+          <button class="tbtn" onclick="selectNone()">清空</button>
+        </div>
       </div>
-      <p class="hint" id="rangeHint" style="margin-top:10px"></p>
+      <div class="tool-group">
+        <span class="tool-label">操作</span>
+        <div class="tool-btns">
+          <button class="tbtn" id="rotateBtn" onclick="rotateSelected()" disabled>
+            <svg viewBox="0 0 24 24"><use href="#i-rotate"/></svg><span id="rotateLabel">旋转 90°</span>
+          </button>
+          <button class="tbtn switch-btn" id="reverseSwitch" onclick="toggleReverse()">
+            <span class="sw"><i></i></span>倒序导出
+          </button>
+        </div>
+      </div>
+      <p class="hint" id="rangeHint"></p>
     </div>
 
     <div class="pages hidden" id="pageList"></div>
@@ -746,7 +815,7 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
 
 <!-- 保存结果面板 -->
 <div class="sheet hidden" id="saveSheet">
-  <div class="sheet-mask" onclick="closeSaveSheet()"></div>
+  <div class="sheet-mask"></div>
   <div class="sheet-box">
     <div class="sheet-head">
       <div class="sheet-check"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></div>
@@ -1223,6 +1292,8 @@ function buildSingleView() {
   $('#fileName').textContent = state.fileName;
   $('#pageCount').textContent = `共 ${state.numPages} 页`;
   $('#encryptedBadge').classList.toggle('hidden', !state.encrypted);
+  // 导出设置只在加密 PDF 下才有意义（普通 PDF 走矢量提取，不受影响）
+  $('#exportSettings').classList.toggle('hidden', !state.encrypted);
   $('#filePanel').classList.remove('hidden');
   $('#quickPanel').classList.remove('hidden');
   $('#toolsPanel').classList.remove('hidden');
@@ -1286,9 +1357,10 @@ function makeCard(n) {
 async function renderThumb(n, card) {
   try {
     const page = await state.doc.getPage(n);
-    const v1 = page.getViewport({ scale: 1 });
-    // 按卡片宽度换算渲染比例，宽度过大时限制为原尺寸
-    const vp = page.getViewport({ scale: Math.min(1, 130 / v1.width) });
+    const rot = state.rotation.get(n) || 0;
+    const v1 = page.getViewport({ scale: 1, rotation: rot });
+    // 按卡片宽度换算渲染比例，宽度过大时限制为原尺寸；旋转后宽高互换，按旋转后的宽度算
+    const vp = page.getViewport({ scale: Math.min(1, 130 / v1.width), rotation: rot });
     const canvas = card.querySelector('canvas');
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width  = Math.max(1, Math.floor(vp.width * dpr));
@@ -1387,9 +1459,10 @@ function updateBottomBar() {
   $('#selCount').textContent = n + ' / ' + state.numPages;
   $('#extractBtn').disabled = n === 0;
   $('#splitBtn').disabled = n === 0;
-  const r = rangesOf(state.selection) || '未选择页面';
-  $('#rangeHint').textContent = '已选页面：' + r;
-  $('#rangeHint2').textContent = r;
+  const r = rangesOf(state.selection);
+  $('#rangeHint').textContent = n ? ('已选 ' + n + ' 页 · ' + r) : '未选择页面';
+  $('#rangeHint2').textContent = r || '未选择页面';
+  updateToolState();
   syncBottomBar();
 }
 
@@ -1421,7 +1494,7 @@ function invertSelect() {
 /** 切换"倒序提取"开关状态。 */
 function toggleReverse() {
   state.reverse = !state.reverse;
-  $('#reverseChip').classList.toggle('on', state.reverse);
+  updateToolState();
 }
 
 /**
@@ -1430,10 +1503,38 @@ function toggleReverse() {
  */
 function rotateSelected() {
   if (!state.selection.size) { toast('请先选择页面'); return; }
-  state.selection.forEach(n => state.rotation.set(n, ((state.rotation.get(n) || 0) + 90) % 360));
-  toast('已为选中页追加 90° 旋转');
+  const targets = [...state.selection];
+  targets.forEach(n => state.rotation.set(n, ((state.rotation.get(n) || 0) + 90) % 360));
+  // 立即重画这些页的缩略图，否则用户看不出旋转是否生效
+  targets.forEach(n => {
+    const card = document.querySelector('.card[data-page="' + n + '"]');
+    if (card) renderThumb(n, card);
+  });
+  updateToolState();
+  toast('已旋转 ' + targets.length + ' 页');
   // 若预览窗口正显示被旋转的页面，立即刷新预览
   if (state.preview && state.selection.has(state.preview.page)) renderPreview();
+}
+
+/**
+ * 同步工具条状态：旋转按钮的可用性与文案、倒序开关的开关态。
+ */
+function updateToolState() {
+  const n = state.selection.size;
+  const btn = $('#rotateBtn');
+  const label = $('#rotateLabel');
+  if (btn) btn.disabled = n === 0;
+  if (label) {
+    if (!n) {
+      label.textContent = '旋转 90°';
+    } else {
+      const angles = [...state.selection].map(p => state.rotation.get(p) || 0);
+      const same = angles.every(a => a === angles[0]);
+      label.textContent = same ? ('旋转至 ' + ((angles[0] + 90) % 360) + '°') : '旋转 90°';
+    }
+  }
+  const sw = $('#reverseSwitch');
+  if (sw) sw.classList.toggle('on', !!state.reverse);
 }
 
 /**
@@ -1545,9 +1646,9 @@ $('#pvWrap').addEventListener('touchend', e => {
  * @returns {{scale: number, fmt: string}} 清晰度倍率与图片格式（jpeg/png）
  */
 function rasterSettings() {
-  const q = document.querySelector('input[name="quality"]:checked');
-  const f = document.querySelector('input[name="imgfmt"]:checked');
-  return { scale: +(q ? q.value : 2), fmt: f ? f.value : 'jpeg' };
+  const q = document.querySelector('.seg[data-name="quality"] .seg-item.active');
+  const f = document.querySelector('.seg[data-name="imgfmt"] .seg-item.active');
+  return { scale: +(q ? q.dataset.value : 2), fmt: f ? f.dataset.value : 'jpeg' };
 }
 
 /**
@@ -1918,6 +2019,16 @@ function init() {
   if (window.ResizeObserver) {
     new ResizeObserver(() => syncBottomBar()).observe($('#bottombar'));
   }
+
+  // 分段控件：点击切换选中项（清晰度 / 格式）
+  document.querySelectorAll('.seg').forEach(seg => {
+    seg.addEventListener('click', e => {
+      const item = e.target.closest('.seg-item');
+      if (!item) return;
+      seg.querySelectorAll('.seg-item').forEach(b => b.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
 
   $('#fileInput').addEventListener('change', onPickFile);
   $('#mergeInput').addEventListener('change', onMergeFiles);

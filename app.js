@@ -374,6 +374,8 @@ function buildSingleView() {
   $('#fileName').textContent = state.fileName;
   $('#pageCount').textContent = `共 ${state.numPages} 页`;
   $('#encryptedBadge').classList.toggle('hidden', !state.encrypted);
+  // 导出设置只在加密 PDF 下才有意义（普通 PDF 走矢量提取，不受影响）
+  $('#exportSettings').classList.toggle('hidden', !state.encrypted);
   $('#filePanel').classList.remove('hidden');
   $('#quickPanel').classList.remove('hidden');
   $('#toolsPanel').classList.remove('hidden');
@@ -437,9 +439,10 @@ function makeCard(n) {
 async function renderThumb(n, card) {
   try {
     const page = await state.doc.getPage(n);
-    const v1 = page.getViewport({ scale: 1 });
-    // 按卡片宽度换算渲染比例，宽度过大时限制为原尺寸
-    const vp = page.getViewport({ scale: Math.min(1, 130 / v1.width) });
+    const rot = state.rotation.get(n) || 0;
+    const v1 = page.getViewport({ scale: 1, rotation: rot });
+    // 按卡片宽度换算渲染比例，宽度过大时限制为原尺寸；旋转后宽高互换，按旋转后的宽度算
+    const vp = page.getViewport({ scale: Math.min(1, 130 / v1.width), rotation: rot });
     const canvas = card.querySelector('canvas');
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width  = Math.max(1, Math.floor(vp.width * dpr));
@@ -538,9 +541,10 @@ function updateBottomBar() {
   $('#selCount').textContent = n + ' / ' + state.numPages;
   $('#extractBtn').disabled = n === 0;
   $('#splitBtn').disabled = n === 0;
-  const r = rangesOf(state.selection) || '未选择页面';
-  $('#rangeHint').textContent = '已选页面：' + r;
-  $('#rangeHint2').textContent = r;
+  const r = rangesOf(state.selection);
+  $('#rangeHint').textContent = n ? ('已选 ' + n + ' 页 · ' + r) : '未选择页面';
+  $('#rangeHint2').textContent = r || '未选择页面';
+  updateToolState();
   syncBottomBar();
 }
 
@@ -572,7 +576,7 @@ function invertSelect() {
 /** 切换"倒序提取"开关状态。 */
 function toggleReverse() {
   state.reverse = !state.reverse;
-  $('#reverseChip').classList.toggle('on', state.reverse);
+  updateToolState();
 }
 
 /**
@@ -581,10 +585,38 @@ function toggleReverse() {
  */
 function rotateSelected() {
   if (!state.selection.size) { toast('请先选择页面'); return; }
-  state.selection.forEach(n => state.rotation.set(n, ((state.rotation.get(n) || 0) + 90) % 360));
-  toast('已为选中页追加 90° 旋转');
+  const targets = [...state.selection];
+  targets.forEach(n => state.rotation.set(n, ((state.rotation.get(n) || 0) + 90) % 360));
+  // 立即重画这些页的缩略图，否则用户看不出旋转是否生效
+  targets.forEach(n => {
+    const card = document.querySelector('.card[data-page="' + n + '"]');
+    if (card) renderThumb(n, card);
+  });
+  updateToolState();
+  toast('已旋转 ' + targets.length + ' 页');
   // 若预览窗口正显示被旋转的页面，立即刷新预览
   if (state.preview && state.selection.has(state.preview.page)) renderPreview();
+}
+
+/**
+ * 同步工具条状态：旋转按钮的可用性与文案、倒序开关的开关态。
+ */
+function updateToolState() {
+  const n = state.selection.size;
+  const btn = $('#rotateBtn');
+  const label = $('#rotateLabel');
+  if (btn) btn.disabled = n === 0;
+  if (label) {
+    if (!n) {
+      label.textContent = '旋转 90°';
+    } else {
+      const angles = [...state.selection].map(p => state.rotation.get(p) || 0);
+      const same = angles.every(a => a === angles[0]);
+      label.textContent = same ? ('旋转至 ' + ((angles[0] + 90) % 360) + '°') : '旋转 90°';
+    }
+  }
+  const sw = $('#reverseSwitch');
+  if (sw) sw.classList.toggle('on', !!state.reverse);
 }
 
 /**
@@ -696,9 +728,9 @@ $('#pvWrap').addEventListener('touchend', e => {
  * @returns {{scale: number, fmt: string}} 清晰度倍率与图片格式（jpeg/png）
  */
 function rasterSettings() {
-  const q = document.querySelector('input[name="quality"]:checked');
-  const f = document.querySelector('input[name="imgfmt"]:checked');
-  return { scale: +(q ? q.value : 2), fmt: f ? f.value : 'jpeg' };
+  const q = document.querySelector('.seg[data-name="quality"] .seg-item.active');
+  const f = document.querySelector('.seg[data-name="imgfmt"] .seg-item.active');
+  return { scale: +(q ? q.dataset.value : 2), fmt: f ? f.dataset.value : 'jpeg' };
 }
 
 /**
@@ -1069,6 +1101,16 @@ function init() {
   if (window.ResizeObserver) {
     new ResizeObserver(() => syncBottomBar()).observe($('#bottombar'));
   }
+
+  // 分段控件：点击切换选中项（清晰度 / 格式）
+  document.querySelectorAll('.seg').forEach(seg => {
+    seg.addEventListener('click', e => {
+      const item = e.target.closest('.seg-item');
+      if (!item) return;
+      seg.querySelectorAll('.seg-item').forEach(b => b.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
 
   $('#fileInput').addEventListener('change', onPickFile);
   $('#mergeInput').addEventListener('change', onMergeFiles);

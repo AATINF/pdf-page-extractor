@@ -19,7 +19,7 @@ M = """() => {
   const vis = b => b.offsetParent !== null && b.getBoundingClientRect().height > 0;
   const normBtns = [...document.querySelectorAll('.btn')].filter(vis).map(b => Math.round(b.getBoundingClientRect().height));
   const tabBtns = [...document.querySelectorAll('.tab')].filter(vis).map(b => Math.round(b.getBoundingClientRect().height));
-  const chipBtns = [...document.querySelectorAll('.chip')].filter(vis).map(b => Math.round(b.getBoundingClientRect().height));
+  const chipBtns = [...document.querySelectorAll('.tbtn')].filter(vis).map(b => Math.round(b.getBoundingClientRect().height));
   const bbH = bb ? Math.round(bb.getBoundingClientRect().height) : 0;
   const toast = document.getElementById('toast');
   return {
@@ -60,7 +60,7 @@ async def main():
 
         m = await page.evaluate(M)
         ck('缩略图3列', m['cols'] == 3, f"cols={m['cols']}")
-        ck('芯片≥34px', m['chipMin'] >= 34, f"chipMin={m['chipMin']}")
+        ck('工具按钮≥36px', m['chipMin'] >= 36, f"tbtnMin={m['chipMin']}")
         ck('无横向溢出(列表)', m['scrollW'] <= m['clientW'], f"scrollW={m['scrollW']}")
         ck('底栏打开后可见', m['bbH'] > 0, f"bbH={m['bbH']}")
         ck('未选中时留白够', m['bodyPad'] >= m['bbH'], f"pad={m['bodyPad']} bbH={m['bbH']}")
