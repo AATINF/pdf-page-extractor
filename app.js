@@ -85,12 +85,59 @@ function fileNameBase(name) { return (name || 'output').replace(/\.pdf$/i, '') |
  * @param {string} name 下载文件名
  */
 function download(blob, name) {
+  // 安卓 App 里 WebView 不认 <a download> + blob:，必须交给原生写入系统「下载」目录
+  if (IS_APP && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.FileSaver) {
+    saveViaNative(blob, name);
+    return;
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = name;
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+
+/**
+ * Blob 转纯 base64（去掉 data: 前缀），供原生桥使用。
+ * @param {Blob} blob
+ * @returns {Promise<string>}
+ */
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const s = String(r.result || '');
+      const i = s.indexOf(',');
+      resolve(i >= 0 ? s.slice(i + 1) : s);
+    };
+    r.onerror = () => reject(r.error || new Error('读取文件失败'));
+    r.readAsDataURL(blob);
+  });
+}
+
+/**
+ * 通过原生桥把文件写进系统「下载」目录。
+ * @param {Blob} blob
+ * @param {string} name 文件名
+ */
+async function saveViaNative(blob, name) {
+  if (blob.size > 60 * 1024 * 1024) toast('文件较大，保存可能需要几秒');
+  showBusy('正在保存…');
+  try {
+    const data = await blobToBase64(blob);
+    await window.Capacitor.Plugins.FileSaver.save({
+      data,
+      fileName: name,
+      mime: blob.type || 'application/pdf'
+    });
+    hideBusy();
+    toast('已保存到「下载」：' + name, 3600);
+  } catch (e) {
+    hideBusy();
+    toast('保存失败：' + ((e && e.message) || e), 4000);
+    throw e;
+  }
 }
 
 /**
@@ -434,6 +481,21 @@ function initAppShell() {
   if (urlRow) urlRow.classList.add('hidden');
   const tip = document.querySelector('.dz-tip');
   if (tip) tip.textContent = '从手机文件管理器选择';
+}
+
+/**
+ * 安卓物理返回键：先关弹层，再清选中，最后才退出 App。
+ * 不加这段的话，用户按返回会直接杀掉进程。
+ */
+function setupBackButton() {
+  const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (!IS_APP || !App) return;
+  App.addListener('backButton', () => {
+    if (!$('#previewModal').classList.contains('hidden')) { closePreview(); return; }
+    if (!$('#dialog').classList.contains('hidden')) { finishDialog(null); return; }
+    if (state.selection && state.selection.size) { selectNone(); return; }
+    App.exitApp();
+  });
 }
 
 /**
@@ -969,6 +1031,7 @@ function bindDrag(dz) {
 function init() {
   setupPdfjsWorker();
   initAppShell();
+  setupBackButton();
 
   // 底栏换行 / 旋转屏幕后高度会变，实时同步给 CSS
   if (window.ResizeObserver) {
@@ -990,7 +1053,7 @@ function init() {
   // 支持 "打开方式" 传参（例如从系统分享到浏览器打开 ?file=... 场景可扩展，此处略）
 
   // 仅在 http/https 协议下注册 Service Worker，file:// 打开时自动跳过
-  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  if (!IS_APP && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     navigator.serviceWorker.register('./sw.js').catch(() => { /* 忽略 */ });
   }
 }

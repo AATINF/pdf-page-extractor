@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PDF 页面提取器</string>
+    <string name="title_activity_main">PDF 页面提取器</string>
+    <string name="package_name">com.aatinf.pdfextractor</string>
+    <string name="custom_url_scheme">com.aatinf.pdfextractor</string>
+</resources>

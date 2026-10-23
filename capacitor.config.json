@@ -1,0 +1,13 @@
+{
+  "appId": "com.aatinf.pdfextractor",
+  "appName": "PDF 页面提取器",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}

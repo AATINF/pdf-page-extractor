@@ -4,3 +4,17 @@ node_modules/
 
 # 交付包不进仓库
 PDF提取器-手机版预览*.zip
+
+# Capacitor / Android
+www/
+node_modules/
+keystore/
+*.p12
+*.jks
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
