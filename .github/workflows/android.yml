@@ -104,3 +104,4 @@ jobs:
         with:
           files: out/*.apk
           generate_release_notes: true
+          overwrite_files: true
