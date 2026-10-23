@@ -86,6 +86,9 @@ jobs:
           VER=$(node -p "require('./package.json').version")
           cp android/app/build/outputs/apk/release/app-release.apk \
              "out/pdf-page-extractor-v${VER}.apk"
+          # 固定文件名的副本，保证 /releases/latest/download/pdf-page-extractor.apk 长期有效
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             "out/pdf-page-extractor.apk"
           ls -lh out/
 
       - name: Upload artifact

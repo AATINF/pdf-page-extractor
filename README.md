@@ -15,7 +15,7 @@
 
 <br>
 
-<a href="https://github.com/AATINF/pdf-page-extractor/releases/latest/download/pdf-page-extractor-v1.2.1.apk"><img src="https://img.shields.io/badge/📱%20下载安卓%20APK-2ea043?style=for-the-badge&logo=android&logoColor=white" alt="下载安卓 APK"></a>
+<a href="https://github.com/AATINF/pdf-page-extractor/releases/latest/download/pdf-page-extractor.apk"><img src="https://img.shields.io/badge/📱%20下载安卓%20APK-2ea043?style=for-the-badge&logo=android&logoColor=white" alt="下载安卓 APK"></a>
 &nbsp;
 <a href="https://github.com/AATINF/pdf-page-extractor/releases/latest/download/pdf-page-extractor.html"><img src="https://img.shields.io/badge/📥%20下载单文件版-1f6feb?style=for-the-badge&logo=html5&logoColor=white" alt="下载单文件版"></a>
 &nbsp;
@@ -35,7 +35,7 @@
 | **大小** | 3.9 MB |
 | **系统要求** | Android 7.0（API 24）及以上 |
 | **权限** | 只有 1 个：`INTERNET`（见下方说明） |
-| **下载** | [pdf-page-extractor-v1.2.1.apk](https://github.com/AATINF/pdf-page-extractor/releases/latest/download/pdf-page-extractor-v1.2.1.apk) |
+| **下载** | [pdf-page-extractor-v1.2.1.apk](https://github.com/AATINF/pdf-page-extractor/releases/latest/download/pdf-page-extractor.apk) |
 
 ### 安装
 
@@ -138,7 +138,7 @@ APK 的 `AndroidManifest.xml` 里实际只声明了两个：
 
 | 方式 | 适用场景 | 做法 |
 |---|---|---|
-| **安卓 App**（推荐） | 手机日常使用 | [下载 APK](https://github.com/AATINF/pdf-page-extractor/releases/latest/download/pdf-page-extractor-v1.2.1.apk) 安装，离线可用 |
+| **安卓 App**（推荐） | 手机日常使用 | [下载 APK](https://github.com/AATINF/pdf-page-extractor/releases/latest/download/pdf-page-extractor.apk) 安装，离线可用 |
 | **单文件版** | 电脑、平板、任何浏览器 | 下载 `pdf-page-extractor.html`，双击打开即用 |
 | 多文件版 | 想当 PWA / 二次开发 | 浏览器打开 `index.html`（需经 HTTP 服务器） |
 | 局域网 | 手机访问电脑上的文件 | `python3 serve.py`，手机打开打印出的地址 |
