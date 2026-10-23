@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """生成单文件版：把所有 JS 库 + 业务逻辑全部内联进 index.html，
 输出一个拷走就能用的 HTML 文件（离线、file:// 直接打开）。"""
-import os, re
+import json, os, re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -17,6 +17,13 @@ def inline_script(html, src, path):
 def main():
     with open(os.path.join(ROOT, 'index.html'), 'r', encoding='utf-8') as f:
         html = f.read()
+
+    # 版本号从 package.json 注入，避免界面上显示的版本落后于实际发布版
+    with open(os.path.join(ROOT, 'package.json'), 'r', encoding='utf-8') as f:
+        version = json.load(f)['version']
+    html = re.sub(r'(<title>PDF 页面提取器 )v[\d.]+(</title>)', r'\g<1>v' + version + r'\g<2>', html)
+    html = re.sub(r'(id="verTag">)v[\d.]+', r'\g<1>v' + version, html)
+    html = re.sub(r'(id="appVer">)v[\d.]+', r'\g<1>v' + version, html)
 
     html = inline_script(html, 'app.js', os.path.join(ROOT, 'app.js'))
     html = inline_script(html, 'lib/pdf.min.js', os.path.join(ROOT, 'lib', 'pdf.min.js'))

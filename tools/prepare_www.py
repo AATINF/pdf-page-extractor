@@ -3,7 +3,7 @@
 
 白名单机制：只复制明确列出的文件/目录，文档、演示视频、截图、软著材料一律不进包。
 """
-import shutil, pathlib, sys
+import json, re, shutil, pathlib, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 WWW = ROOT / 'www'
@@ -16,14 +16,25 @@ def main():
         shutil.rmtree(WWW)
     WWW.mkdir()
 
+    # 版本号从 package.json 注入，避免界面上的版本和实际发布版不一致
+    version = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))['version']
+
     total = 0
     for f in FILES:
         src = ROOT / f
         if not src.exists():
             sys.exit('缺少文件: ' + f)
-        shutil.copy2(src, WWW / f)
+        if f == 'index.html':
+            html = src.read_text(encoding='utf-8')
+            html = re.sub(r'(<title>PDF 页面提取器 )v[\d.]+(</title>)', r'\g<1>v' + version + r'\g<2>', html)
+            html = re.sub(r'(id="verTag">)v[\d.]+', r'\g<1>v' + version, html)
+            html = re.sub(r'(id="appVer">)v[\d.]+', r'\g<1>v' + version, html)
+            (WWW / f).write_text(html, encoding='utf-8')
+            print(f'  + {f}  (版本 v{version})')
+        else:
+            shutil.copy2(src, WWW / f)
+            print('  +', f)
         total += src.stat().st_size
-        print('  +', f)
 
     for d in DIRS:
         src = ROOT / d

@@ -51,6 +51,18 @@ jobs:
       - name: Capacitor sync
         run: npx cap sync android
 
+      - name: Verify web assets
+        run: |
+          echo "== 打进 APK 的版本号 =="
+          grep -o 'id="appVer">[^<]*' www/index.html || true
+          grep -o '<title>[^<]*' www/index.html || true
+          echo "== 关键特性是否存在 =="
+          for k in exportSettings reverseSwitch tool-group appVer; do
+            printf '%-16s %s\n' "$k" "$(grep -c "$k" www/index.html)"
+          done
+          echo "== assets/public 内容 =="
+          ls -1 android/app/src/main/assets/public/
+
       - name: Restore signing key
         run: |
           mkdir -p "$RUNNER_TEMP/sign"
