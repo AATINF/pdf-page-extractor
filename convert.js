@@ -60,6 +60,8 @@ function loadImage(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
+    // 注意：不能在这里 revoke，否则后续 drawImage 可能拿不到像素数据。
+    // 由调用方用完后再释放。
     img.onload = () => resolve({ img, url, w: img.naturalWidth, h: img.naturalHeight });
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('图片无法读取')); };
     img.src = url;
@@ -189,7 +191,8 @@ async function cvAddImages(files, list, arr, renderFn) {
   for (const f of files) {
     if (!/^image\//.test(f.type)) continue;
     try {
-      const { w, h } = await loadImage(f);
+      const { w, h, url } = await loadImage(f);
+      URL.revokeObjectURL(url);   // 这里只需要宽高，读完立刻释放
       arr.push({ file: f, name: f.name, size: f.size, w, h });
     } catch (e) { /* 跳过读不了的 */ }
   }
@@ -282,16 +285,21 @@ function cvRenderImgList() {
         '<button data-act="down" title="下移">↓</button>' +
         '<button data-act="del" title="移除">✕</button>' +
       '</div>';
-    const url = URL.createObjectURL(it.file);
+    // 缩略图 URL 只创建一次并缓存在 item 上；列表重绘很频繁（拖拽/排序/删除），
+    // 每次新建不释放会持续占用内存
+    if (!it._url) it._url = URL.createObjectURL(it.file);
     const imgEl = row.querySelector('img');
-    imgEl.src = url;
+    imgEl.src = it._url;
     imgEl.addEventListener('click', () => openImagePreview(cv.images, i));
     row.querySelector('.ii-name').textContent = it.name;
     row.querySelector('.ii-size').textContent = it.w + '×' + it.h + ' · ' + fmtSize(it.size);
     row.querySelector('.ii-btns').addEventListener('click', e => {
       const act = e.target.dataset.act;
       if (!act) return;
-      if (act === 'del') { URL.revokeObjectURL(url); cv.images.splice(i, 1); }
+      if (act === 'del') {
+        if (it._url) URL.revokeObjectURL(it._url);
+        cv.images.splice(i, 1);
+      }
       if (act === 'up' && i > 0) [cv.images[i - 1], cv.images[i]] = [cv.images[i], cv.images[i - 1]];
       if (act === 'down' && i < cv.images.length - 1) [cv.images[i + 1], cv.images[i]] = [cv.images[i], cv.images[i + 1]];
       cvRenderImgList();
@@ -622,15 +630,15 @@ function cmpRenderImgList() {
       '<img alt="">' +
       '<div class="ii-meta"><div class="ii-name"></div><div class="ii-size"></div></div>' +
       '<div class="ii-btns"><button data-act="del" title="移除">✕</button></div>';
-    const url = URL.createObjectURL(it.file);
+    if (!it._url) it._url = URL.createObjectURL(it.file);
     const imgEl = row.querySelector('img');
-    imgEl.src = url;
+    imgEl.src = it._url;
     imgEl.addEventListener('click', () => openImagePreview(cv.cmpImages, i));
     row.querySelector('.ii-name').textContent = it.name;
     row.querySelector('.ii-size').textContent = it.w + '×' + it.h + ' · ' + fmtSize(it.size);
     row.querySelector('.ii-btns').addEventListener('click', e => {
       if (e.target.dataset.act !== 'del') return;
-      URL.revokeObjectURL(url);
+      if (it._url) URL.revokeObjectURL(it._url);
       cv.cmpImages.splice(i, 1);
       cmpRenderImgList();
     });

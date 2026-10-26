@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>PDF 页面提取器 v1.6.4</title>
+<title>PDF 页面提取器 v1.6.5</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -861,7 +861,7 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
 
 <header>
   <div class="h-icon"><svg viewBox="0 0 24 24"><use href="#i-doc"/></svg></div>
-  <h1>PDF 页面提取器 <span class="badge" id="verTag">v1.6.4</span></h1>
+  <h1>PDF 页面提取器 <span class="badge" id="verTag">v1.6.5</span></h1>
   <div class="sub" id="fileInfo">选择或打开一个 PDF，勾选页面后提取为新文件（全程本地处理，文件不会上传）</div>
   <div class="h-right">
     <button class="h-btn" onclick="openSettings()" title="设置" aria-label="设置">
@@ -887,7 +887,7 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
       <p class="dz-title">选择一个 PDF 文件</p>
       <p class="dz-desc">勾选任意页面提取为新 PDF，也可以拆分单页、多文件合并</p>
       <button class="dz-cta" onclick="event.stopPropagation();document.getElementById('fileInput').click()"><svg viewBox="0 0 24 24"><use href="#i-folder"/></svg>选择 PDF</button>
-      <p class="dz-foot"><span id="appVer">v1.6.4</span> · 全程在本机处理，文件不会上传</p>
+      <p class="dz-foot"><span id="appVer">v1.6.5</span> · 全程在本机处理，文件不会上传</p>
       <input type="file" id="fileInput" accept="application/pdf,.pdf" class="hidden">
       <div id="urlRow">
         <p style="margin-top:10px;color:var(--sub);font-size:12px">也可以从链接打开：</p>
@@ -3017,6 +3017,8 @@ function loadImage(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
+    // 注意：不能在这里 revoke，否则后续 drawImage 可能拿不到像素数据。
+    // 由调用方用完后再释放。
     img.onload = () => resolve({ img, url, w: img.naturalWidth, h: img.naturalHeight });
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('图片无法读取')); };
     img.src = url;
@@ -3146,7 +3148,8 @@ async function cvAddImages(files, list, arr, renderFn) {
   for (const f of files) {
     if (!/^image\//.test(f.type)) continue;
     try {
-      const { w, h } = await loadImage(f);
+      const { w, h, url } = await loadImage(f);
+      URL.revokeObjectURL(url);   // 这里只需要宽高，读完立刻释放
       arr.push({ file: f, name: f.name, size: f.size, w, h });
     } catch (e) { /* 跳过读不了的 */ }
   }
@@ -3239,16 +3242,21 @@ function cvRenderImgList() {
         '<button data-act="down" title="下移">↓</button>' +
         '<button data-act="del" title="移除">✕</button>' +
       '</div>';
-    const url = URL.createObjectURL(it.file);
+    // 缩略图 URL 只创建一次并缓存在 item 上；列表重绘很频繁（拖拽/排序/删除），
+    // 每次新建不释放会持续占用内存
+    if (!it._url) it._url = URL.createObjectURL(it.file);
     const imgEl = row.querySelector('img');
-    imgEl.src = url;
+    imgEl.src = it._url;
     imgEl.addEventListener('click', () => openImagePreview(cv.images, i));
     row.querySelector('.ii-name').textContent = it.name;
     row.querySelector('.ii-size').textContent = it.w + '×' + it.h + ' · ' + fmtSize(it.size);
     row.querySelector('.ii-btns').addEventListener('click', e => {
       const act = e.target.dataset.act;
       if (!act) return;
-      if (act === 'del') { URL.revokeObjectURL(url); cv.images.splice(i, 1); }
+      if (act === 'del') {
+        if (it._url) URL.revokeObjectURL(it._url);
+        cv.images.splice(i, 1);
+      }
       if (act === 'up' && i > 0) [cv.images[i - 1], cv.images[i]] = [cv.images[i], cv.images[i - 1]];
       if (act === 'down' && i < cv.images.length - 1) [cv.images[i + 1], cv.images[i]] = [cv.images[i], cv.images[i + 1]];
       cvRenderImgList();
@@ -3579,15 +3587,15 @@ function cmpRenderImgList() {
       '<img alt="">' +
       '<div class="ii-meta"><div class="ii-name"></div><div class="ii-size"></div></div>' +
       '<div class="ii-btns"><button data-act="del" title="移除">✕</button></div>';
-    const url = URL.createObjectURL(it.file);
+    if (!it._url) it._url = URL.createObjectURL(it.file);
     const imgEl = row.querySelector('img');
-    imgEl.src = url;
+    imgEl.src = it._url;
     imgEl.addEventListener('click', () => openImagePreview(cv.cmpImages, i));
     row.querySelector('.ii-name').textContent = it.name;
     row.querySelector('.ii-size').textContent = it.w + '×' + it.h + ' · ' + fmtSize(it.size);
     row.querySelector('.ii-btns').addEventListener('click', e => {
       if (e.target.dataset.act !== 'del') return;
-      URL.revokeObjectURL(url);
+      if (it._url) URL.revokeObjectURL(it._url);
       cv.cmpImages.splice(i, 1);
       cmpRenderImgList();
     });
