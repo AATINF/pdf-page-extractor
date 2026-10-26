@@ -100,6 +100,8 @@ APK 的 `AndroidManifest.xml` 里实际只声明了两个：
 | **📄 图片 → PDF** | 多张图片合成 PDF | 可排序、A4 或原尺寸、三档边距 |
 | **🗜️ PDF 压缩** | 图片化 / 无损清理 | 图片化可指定目标大小，实测 3.04MB → 999KB |
 | **🖼️ 图片压缩** | 质量 / 边长 / 目标大小 | 批量处理，自动逼近目标体积 |
+| **⚙️ 设置** | 顶栏齿轮入口 | 目前一项：导出时是否询问文件名 |
+| **✏️ 导出重命名** | 可选，默认关闭 | 开启后导出前弹窗，预填默认名、主名全选、扩展名锁定 |
 
 ---
 
@@ -144,26 +146,49 @@ APK 的 `AndroidManifest.xml` 里实际只声明了两个：
 
 ---
 
-## 🎬 网页版演示（真实 Edge 浏览器录制）
+## ⚙️ 设置
 
-> 所有演示均为**真实浏览器操作录屏**，非动画示意。
+顶栏右上角齿轮进入，目前一项：
 
-### ① 提取指定页面
+| 选项 | 默认 | 说明 |
+|---|---|---|
+| **导出时询问文件名** | 关闭 | 开启后每次导出先弹「保存为」：预填默认名、**主名自动全选**、扩展名（`.pdf`/`.zip`/`.jpg`）锁定不可改；点「取消」则不导出 |
 
-加载 PDF → 渲染缩略图 → 勾选第 2、4 页 → 点击「提取为 PDF」→ 浏览器自动下载。
+- 设置存在本机，关掉 App 再开仍在
+- 批量导出（拆分单页、PDF 转图片）只询问**压缩包**的名字，包内文件仍自动命名
+- 默认关闭，不想折腾的用户完全感觉不到变化
+
+---
+
+## 🎬 操作演示
+
+> 全部为**真实浏览器操作录制**，非动画示意。手机端界面与 App 一致。
+
+### ① 选页并提取
+
+加载 PDF → 缩略图渲染 → 勾选第 2、4 页 → 点「提取 PDF」→ 自动下载 `sample_第2,4页.pdf`。
 
 <div align="center">
-  <img src="assets/demo.gif" alt="提取页面演示" width="680">
-  <br><sub><a href="assets/demo.mp4">📹 高清 MP4 版</a></sub>
+  <img src="assets/demo.gif" alt="选页并提取演示" width="600">
+  <br><sub><a href="assets/demo.mp4">📹 MP4 版（78 KB）</a></sub>
 </div>
 
-### ② 全屏预览 + 缩放 + 旋转
+### ② PDF 转图片
 
-点击眼睛图标进入预览 → 放大查看细节 → 旋转页面确认方向 → 关闭返回。
+切到「转换」→ 选 PDF → 选 3x（216 DPI）→ 导出，多页自动打包成 ZIP。
 
 <div align="center">
-  <img src="assets/demo4_preview.gif" alt="全屏预览演示" width="680">
-  <br><sub><a href="assets/demo4_preview.mp4">📹 高清 MP4 版</a></sub>
+  <img src="assets/demo_convert.gif" alt="PDF 转图片演示" width="600">
+  <br><sub><a href="assets/demo_convert.mp4">📹 MP4 版（80 KB）</a></sub>
+</div>
+
+### ③ 压缩到指定大小
+
+切到「压缩」→ 选 PDF → 点「500K」预设 → 开始压缩，程序自动迭代逼近目标体积。
+
+<div align="center">
+  <img src="assets/demo_compress.gif" alt="压缩到指定大小演示" width="600">
+  <br><sub><a href="assets/demo_compress.mp4">📹 MP4 版（118 KB）</a></sub>
 </div>
 ---
 
@@ -172,9 +197,17 @@ APK 的 `AndroidManifest.xml` 里实际只声明了两个：
 <div align="center">
   <img src="screenshots/06-dark.png" width="240" alt="深色模式">
   <img src="screenshots/12-encrypted-settings.png" width="240" alt="加密 PDF 的导出设置">
-  <img src="screenshots/07-landscape.png" width="460" alt="横屏">
+  <img src="screenshots/17-target-size.png" width="240" alt="压缩目标大小与预设">
   <br>
-  <sub>深色模式 · 加密 PDF 的导出设置 · 横屏布局</sub>
+  <sub>深色模式 · 加密 PDF 的导出设置 · 压缩目标大小</sub>
+</div>
+
+<div align="center">
+  <img src="screenshots/18-settings.png" width="240" alt="设置">
+  <img src="screenshots/19-rename.png" width="240" alt="导出重命名">
+  <img src="screenshots/07-landscape.png" width="240" alt="横屏">
+  <br>
+  <sub>设置 · 导出重命名 · 横屏布局</sub>
 </div>
 
 ---
