@@ -460,6 +460,45 @@ main{max-width:760px;margin:0 auto;padding:0 12px}
   width:36px;text-align:right;font-size:12.5px;font-weight:650;
   color:var(--text-2);flex:0 0 auto;
 }
+/* ---------- 设置弹窗（居中，不跟随手机底部抽屉） ---------- */
+#settingsDialog{align-items:center;padding:26px}
+#settingsDialog .dialog-box{max-width:330px;border-radius:22px;padding:22px 20px 20px}
+.set-row{display:flex;align-items:center;gap:14px;padding:6px 0 16px}
+.set-row .set-text{flex:1;min-width:0}
+.set-title{font-size:14.5px;font-weight:600;color:var(--text)}
+.set-desc{margin-top:4px;font-size:11.5px;line-height:1.55;color:var(--text-3)}
+.set-switch{
+  width:46px;height:27px;border-radius:99px;background:var(--line-2);
+  position:relative;flex:0 0 auto;border:none;cursor:pointer;
+  transition:background .18s var(--ease);
+}
+.set-switch i{
+  position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);
+  transition:transform .18s var(--ease);
+}
+.set-switch.on{background:var(--brand)}
+.set-switch.on i{transform:translateX(19px)}
+
+/* ---------- 重命名输入 ---------- */
+.name-input{
+  display:flex;align-items:center;
+  border:1px solid var(--line-2);border-radius:var(--r-md);
+  background:var(--surface-2);overflow:hidden;
+}
+.name-input input{
+  flex:1;min-width:0;height:46px;padding:0 12px;
+  border:none;background:transparent;color:var(--text);
+  font-size:15px;outline:none;
+}
+.name-input .name-ext{
+  padding:0 12px;height:46px;
+  display:flex;align-items:center;
+  font-size:14px;font-weight:600;color:var(--text-3);
+  background:var(--surface);border-left:1px solid var(--line);
+  flex:0 0 auto;
+}
+
 /* ---------- 目标大小：输入 + 单位 + 预设 ---------- */
 .target-block{margin-top:2px}
 .target-input{display:flex;gap:8px;align-items:center}
@@ -569,7 +608,7 @@ main{max-width:760px;margin:0 auto;padding:0 12px}
   transform:translateX(-50%) translateY(10px) scale(.96);
   background:rgba(17,24,39,.95);color:#fff;
   padding:10px 18px;border-radius:12px;
-  font-size:13px;z-index:80;opacity:0;pointer-events:none;
+  font-size:13px;z-index:55;opacity:0;pointer-events:none;
   transition:all .24s var(--ease);
   max-width:86vw;text-align:center;
   box-shadow:0 8px 24px rgba(0,0,0,.28);
@@ -728,6 +767,11 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
   <div class="h-icon"><svg viewBox="0 0 24 24"><use href="#i-doc"/></svg></div>
   <h1>PDF 页面提取器 <span class="badge" id="verTag">v1.0.0</span></h1>
   <div class="sub" id="fileInfo">选择或打开一个 PDF，勾选页面后提取为新文件（全程本地处理，文件不会上传）</div>
+  <div class="h-right">
+    <button class="h-btn" onclick="openSettings()" title="设置" aria-label="设置">
+      <svg viewBox="0 0 24 24"><use href="#i-gear"/></svg>
+    </button>
+  </div>
 </header>
 
 <div class="tabs">
@@ -1095,6 +1139,38 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
       <button class="btn" onclick="openSaved()">打开</button>
       <button class="btn" onclick="shareSaved()">分享</button>
       <button class="btn primary" onclick="closeSaveSheet()">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设置 -->
+<div class="dialog hidden" id="settingsDialog">
+  <div class="dialog-box">
+    <h3>设置</h3>
+    <div class="set-row">
+      <div class="set-text">
+        <div class="set-title">导出时询问文件名</div>
+        <div class="set-desc">开启后每次导出会先弹窗，默认名已填好，不想改直接点保存</div>
+      </div>
+      <button class="set-switch" id="setAskName" onclick="toggleAskName()" aria-label="导出时询问文件名"><i></i></button>
+    </div>
+    <div class="dbtns">
+      <button class="btn primary" onclick="closeSettings()">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 重命名 -->
+<div class="dialog hidden" id="nameDialog">
+  <div class="dialog-box">
+    <h3>保存为</h3>
+    <div class="name-input">
+      <input id="nameInput" type="text" autocomplete="off" autocorrect="off" spellcheck="false">
+      <span class="name-ext" id="nameExt">.pdf</span>
+    </div>
+    <div class="dbtns">
+      <button class="btn" id="nameCancel">取消</button>
+      <button class="btn primary" id="nameOk">保存</button>
     </div>
   </div>
 </div>

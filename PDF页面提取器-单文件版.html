@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>PDF 页面提取器 v1.4.0</title>
+<title>PDF 页面提取器 v1.5.0</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -460,6 +460,45 @@ main{max-width:760px;margin:0 auto;padding:0 12px}
   width:36px;text-align:right;font-size:12.5px;font-weight:650;
   color:var(--text-2);flex:0 0 auto;
 }
+/* ---------- 设置弹窗（居中，不跟随手机底部抽屉） ---------- */
+#settingsDialog{align-items:center;padding:26px}
+#settingsDialog .dialog-box{max-width:330px;border-radius:22px;padding:22px 20px 20px}
+.set-row{display:flex;align-items:center;gap:14px;padding:6px 0 16px}
+.set-row .set-text{flex:1;min-width:0}
+.set-title{font-size:14.5px;font-weight:600;color:var(--text)}
+.set-desc{margin-top:4px;font-size:11.5px;line-height:1.55;color:var(--text-3)}
+.set-switch{
+  width:46px;height:27px;border-radius:99px;background:var(--line-2);
+  position:relative;flex:0 0 auto;border:none;cursor:pointer;
+  transition:background .18s var(--ease);
+}
+.set-switch i{
+  position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);
+  transition:transform .18s var(--ease);
+}
+.set-switch.on{background:var(--brand)}
+.set-switch.on i{transform:translateX(19px)}
+
+/* ---------- 重命名输入 ---------- */
+.name-input{
+  display:flex;align-items:center;
+  border:1px solid var(--line-2);border-radius:var(--r-md);
+  background:var(--surface-2);overflow:hidden;
+}
+.name-input input{
+  flex:1;min-width:0;height:46px;padding:0 12px;
+  border:none;background:transparent;color:var(--text);
+  font-size:15px;outline:none;
+}
+.name-input .name-ext{
+  padding:0 12px;height:46px;
+  display:flex;align-items:center;
+  font-size:14px;font-weight:600;color:var(--text-3);
+  background:var(--surface);border-left:1px solid var(--line);
+  flex:0 0 auto;
+}
+
 /* ---------- 目标大小：输入 + 单位 + 预设 ---------- */
 .target-block{margin-top:2px}
 .target-input{display:flex;gap:8px;align-items:center}
@@ -569,7 +608,7 @@ main{max-width:760px;margin:0 auto;padding:0 12px}
   transform:translateX(-50%) translateY(10px) scale(.96);
   background:rgba(17,24,39,.95);color:#fff;
   padding:10px 18px;border-radius:12px;
-  font-size:13px;z-index:80;opacity:0;pointer-events:none;
+  font-size:13px;z-index:55;opacity:0;pointer-events:none;
   transition:all .24s var(--ease);
   max-width:86vw;text-align:center;
   box-shadow:0 8px 24px rgba(0,0,0,.28);
@@ -726,8 +765,13 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
 
 <header>
   <div class="h-icon"><svg viewBox="0 0 24 24"><use href="#i-doc"/></svg></div>
-  <h1>PDF 页面提取器 <span class="badge" id="verTag">v1.4.0</span></h1>
+  <h1>PDF 页面提取器 <span class="badge" id="verTag">v1.5.0</span></h1>
   <div class="sub" id="fileInfo">选择或打开一个 PDF，勾选页面后提取为新文件（全程本地处理，文件不会上传）</div>
+  <div class="h-right">
+    <button class="h-btn" onclick="openSettings()" title="设置" aria-label="设置">
+      <svg viewBox="0 0 24 24"><use href="#i-gear"/></svg>
+    </button>
+  </div>
 </header>
 
 <div class="tabs">
@@ -747,7 +791,7 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
       <p class="dz-title">选择一个 PDF 文件</p>
       <p class="dz-desc">勾选任意页面提取为新 PDF，也可以拆分单页、多文件合并</p>
       <button class="dz-cta" onclick="event.stopPropagation();document.getElementById('fileInput').click()"><svg viewBox="0 0 24 24"><use href="#i-folder"/></svg>选择 PDF</button>
-      <p class="dz-foot"><span id="appVer">v1.4.0</span> · 全程在本机处理，文件不会上传</p>
+      <p class="dz-foot"><span id="appVer">v1.5.0</span> · 全程在本机处理，文件不会上传</p>
       <input type="file" id="fileInput" accept="application/pdf,.pdf" class="hidden">
       <div id="urlRow">
         <p style="margin-top:10px;color:var(--sub);font-size:12px">也可以从链接打开：</p>
@@ -1099,6 +1143,38 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
   </div>
 </div>
 
+<!-- 设置 -->
+<div class="dialog hidden" id="settingsDialog">
+  <div class="dialog-box">
+    <h3>设置</h3>
+    <div class="set-row">
+      <div class="set-text">
+        <div class="set-title">导出时询问文件名</div>
+        <div class="set-desc">开启后每次导出会先弹窗，默认名已填好，不想改直接点保存</div>
+      </div>
+      <button class="set-switch" id="setAskName" onclick="toggleAskName()" aria-label="导出时询问文件名"><i></i></button>
+    </div>
+    <div class="dbtns">
+      <button class="btn primary" onclick="closeSettings()">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 重命名 -->
+<div class="dialog hidden" id="nameDialog">
+  <div class="dialog-box">
+    <h3>保存为</h3>
+    <div class="name-input">
+      <input id="nameInput" type="text" autocomplete="off" autocorrect="off" spellcheck="false">
+      <span class="name-ext" id="nameExt">.pdf</span>
+    </div>
+    <div class="dbtns">
+      <button class="btn" id="nameCancel">取消</button>
+      <button class="btn primary" id="nameOk">保存</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1287,6 +1363,19 @@ function fileNameBase(name) { return (name || 'output').replace(/\.pdf$/i, '') |
  * @param {string} name 下载文件名
  */
 function download(blob, name) {
+  // 开了「导出时询问文件名」就先弹窗，用户取消则整个导出作废
+  if (askNameEnabled()) {
+    askFileName(name).then(finalName => {
+      if (!finalName) return;
+      doDownload(blob, finalName);
+    }).catch(() => {});
+    return;
+  }
+  doDownload(blob, name);
+}
+
+/** 真正执行保存：App 走原生桥，浏览器走 <a download>。 */
+function doDownload(blob, name) {
   // 安卓 App 里 WebView 不认 <a download> + blob:，必须交给原生写入系统「下载」目录
   if (IS_APP && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.FileSaver) {
     saveViaNative(blob, name);
@@ -1298,6 +1387,92 @@ function download(blob, name) {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+
+/* ---------------- 设置 ---------------- */
+
+const SETTINGS_KEY = 'pdfextractor.settings';
+
+function loadSettings() {
+  try {
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveSettings(patch) {
+  const next = Object.assign(loadSettings(), patch);
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)); } catch (e) { /* 隐私模式忽略 */ }
+  return next;
+}
+
+/** 是否在导出前询问文件名（默认关闭）。 */
+function askNameEnabled() {
+  return !!loadSettings().askName;
+}
+
+function openSettings() {
+  const sw = $('#setAskName');
+  if (sw) sw.classList.toggle('on', askNameEnabled());
+  $('#settingsDialog').classList.remove('hidden');
+}
+
+function closeSettings() {
+  $('#settingsDialog').classList.add('hidden');
+}
+
+function toggleAskName() {
+  const next = !askNameEnabled();
+  saveSettings({ askName: next });
+  $('#setAskName').classList.toggle('on', next);
+  toast(next ? '导出时会先问你文件名' : '导出时直接使用默认文件名', 2200);
+}
+
+/* ---------------- 重命名弹窗 ---------------- */
+
+let nameResolver = null;
+
+/**
+ * 弹出「保存为」，预填默认名（主名全选，扩展名固定不可改）。
+ * @param {string} defaultName 形如 sample_第1-3页.pdf
+ * @returns {Promise<string|null>} 确认返回完整文件名，取消返回 null
+ */
+function askFileName(defaultName) {
+  return new Promise(resolve => {
+    const dot = defaultName.lastIndexOf('.');
+    const base = dot > 0 ? defaultName.slice(0, dot) : defaultName;
+    const ext = dot > 0 ? defaultName.slice(dot) : '';
+
+    $('#nameInput').value = base;
+    $('#nameExt').textContent = ext;
+    $('#nameDialog').classList.remove('hidden');
+    nameResolver = resolve;
+
+    // 稍等一帧再聚焦，否则安卓键盘可能弹不出来
+    setTimeout(() => {
+      const input = $('#nameInput');
+      input.focus();
+      input.select();
+    }, 60);
+  });
+}
+
+function finishNameDialog(ok) {
+  const dialog = $('#nameDialog');
+  if (dialog.classList.contains('hidden')) return;
+  dialog.classList.add('hidden');
+
+  const resolve = nameResolver;
+  nameResolver = null;
+  if (!resolve) return;
+
+  if (!ok) { resolve(null); return; }
+
+  const base = $('#nameInput').value.trim().replace(/[\\/:*?"<>|]/g, '_');
+  if (!base) { toast('文件名不能为空'); resolve(null); return; }
+
+  resolve(base + $('#nameExt').textContent);
 }
 
 /**
@@ -1758,6 +1933,8 @@ function setupBackButton() {
   const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
   if (!IS_APP || !App) return;
   App.addListener('backButton', () => {
+    if (!$('#nameDialog').classList.contains('hidden')) { finishNameDialog(false); return; }
+    if (!$('#settingsDialog').classList.contains('hidden')) { closeSettings(); return; }
     if (!$('#saveSheet').classList.contains('hidden')) { closeSaveSheet(); return; }
     if (!$('#previewModal').classList.contains('hidden')) { closePreview(); return; }
     if (!$('#dialog').classList.contains('hidden')) { finishDialog(null); return; }
@@ -2357,6 +2534,14 @@ function init() {
   $('#fileInput').addEventListener('change', onPickFile);
   $('#mergeInput').addEventListener('change', onMergeFiles);
   bindDrag($('#dropzone'));
+
+  // 重命名弹窗
+  $('#nameOk').addEventListener('click', () => finishNameDialog(true));
+  $('#nameCancel').addEventListener('click', () => finishNameDialog(false));
+  $('#nameInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); finishNameDialog(true); }
+    else if (e.key === 'Escape') finishNameDialog(false);
+  });
 
   // 对话框按钮与键盘事件
   $('#dlgOk').addEventListener('click', () => finishDialog($('#dlgInput').value.trim() || null));

@@ -103,6 +103,19 @@ function fileNameBase(name) { return (name || 'output').replace(/\.pdf$/i, '') |
  * @param {string} name 下载文件名
  */
 function download(blob, name) {
+  // 开了「导出时询问文件名」就先弹窗，用户取消则整个导出作废
+  if (askNameEnabled()) {
+    askFileName(name).then(finalName => {
+      if (!finalName) return;
+      doDownload(blob, finalName);
+    }).catch(() => {});
+    return;
+  }
+  doDownload(blob, name);
+}
+
+/** 真正执行保存：App 走原生桥，浏览器走 <a download>。 */
+function doDownload(blob, name) {
   // 安卓 App 里 WebView 不认 <a download> + blob:，必须交给原生写入系统「下载」目录
   if (IS_APP && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.FileSaver) {
     saveViaNative(blob, name);
@@ -114,6 +127,92 @@ function download(blob, name) {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+
+/* ---------------- 设置 ---------------- */
+
+const SETTINGS_KEY = 'pdfextractor.settings';
+
+function loadSettings() {
+  try {
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveSettings(patch) {
+  const next = Object.assign(loadSettings(), patch);
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)); } catch (e) { /* 隐私模式忽略 */ }
+  return next;
+}
+
+/** 是否在导出前询问文件名（默认关闭）。 */
+function askNameEnabled() {
+  return !!loadSettings().askName;
+}
+
+function openSettings() {
+  const sw = $('#setAskName');
+  if (sw) sw.classList.toggle('on', askNameEnabled());
+  $('#settingsDialog').classList.remove('hidden');
+}
+
+function closeSettings() {
+  $('#settingsDialog').classList.add('hidden');
+}
+
+function toggleAskName() {
+  const next = !askNameEnabled();
+  saveSettings({ askName: next });
+  $('#setAskName').classList.toggle('on', next);
+  toast(next ? '导出时会先问你文件名' : '导出时直接使用默认文件名', 2200);
+}
+
+/* ---------------- 重命名弹窗 ---------------- */
+
+let nameResolver = null;
+
+/**
+ * 弹出「保存为」，预填默认名（主名全选，扩展名固定不可改）。
+ * @param {string} defaultName 形如 sample_第1-3页.pdf
+ * @returns {Promise<string|null>} 确认返回完整文件名，取消返回 null
+ */
+function askFileName(defaultName) {
+  return new Promise(resolve => {
+    const dot = defaultName.lastIndexOf('.');
+    const base = dot > 0 ? defaultName.slice(0, dot) : defaultName;
+    const ext = dot > 0 ? defaultName.slice(dot) : '';
+
+    $('#nameInput').value = base;
+    $('#nameExt').textContent = ext;
+    $('#nameDialog').classList.remove('hidden');
+    nameResolver = resolve;
+
+    // 稍等一帧再聚焦，否则安卓键盘可能弹不出来
+    setTimeout(() => {
+      const input = $('#nameInput');
+      input.focus();
+      input.select();
+    }, 60);
+  });
+}
+
+function finishNameDialog(ok) {
+  const dialog = $('#nameDialog');
+  if (dialog.classList.contains('hidden')) return;
+  dialog.classList.add('hidden');
+
+  const resolve = nameResolver;
+  nameResolver = null;
+  if (!resolve) return;
+
+  if (!ok) { resolve(null); return; }
+
+  const base = $('#nameInput').value.trim().replace(/[\\/:*?"<>|]/g, '_');
+  if (!base) { toast('文件名不能为空'); resolve(null); return; }
+
+  resolve(base + $('#nameExt').textContent);
 }
 
 /**
@@ -574,6 +673,8 @@ function setupBackButton() {
   const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
   if (!IS_APP || !App) return;
   App.addListener('backButton', () => {
+    if (!$('#nameDialog').classList.contains('hidden')) { finishNameDialog(false); return; }
+    if (!$('#settingsDialog').classList.contains('hidden')) { closeSettings(); return; }
     if (!$('#saveSheet').classList.contains('hidden')) { closeSaveSheet(); return; }
     if (!$('#previewModal').classList.contains('hidden')) { closePreview(); return; }
     if (!$('#dialog').classList.contains('hidden')) { finishDialog(null); return; }
@@ -1173,6 +1274,14 @@ function init() {
   $('#fileInput').addEventListener('change', onPickFile);
   $('#mergeInput').addEventListener('change', onMergeFiles);
   bindDrag($('#dropzone'));
+
+  // 重命名弹窗
+  $('#nameOk').addEventListener('click', () => finishNameDialog(true));
+  $('#nameCancel').addEventListener('click', () => finishNameDialog(false));
+  $('#nameInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); finishNameDialog(true); }
+    else if (e.key === 'Escape') finishNameDialog(false);
+  });
 
   // 对话框按钮与键盘事件
   $('#dlgOk').addEventListener('click', () => finishDialog($('#dlgInput').value.trim() || null));
