@@ -1,6 +1,24 @@
 'use strict';
 /* global pdfjsLib, PDFLib, JSZip */
-/* PDF 页面提取器 —— 纯前端，本地处理，不上传文件 */
+/**
+ * PDF 页面提取器 —— 核心模块
+ *
+ * 职责
+ *   · 打开 PDF（本地文件 / URL）、密码处理、缩略图渲染、全屏预览
+ *   · 页面选择：点选 / 范围输入 / 全选反选 / 旋转 / 倒序
+ *   · 提取、拆分、合并（普通文档走矢量，加密文档走图片化）
+ *   · 安卓原生壳桥接：保存到下载目录、分享、打开、物理返回键
+ *
+ * 加载顺序（index.html 末尾）
+ *   lib/pdf.min.js → lib/pdf-lib.min.js → lib/jszip.min.js → app.js → convert.js
+ *
+ * 对外提供
+ *   HTML 内 onclick 调用的全局函数；以及供 convert.js 复用的
+ *   $ / $$ / state / download / toast / showBusy / hideBusy
+ *
+ * 约定
+ *   所有处理都在本机完成，代码中不得出现任何网络请求。
+ */
 
 /**
  * DOM 快捷查询：返回匹配选择器的第一个元素。
@@ -386,6 +404,7 @@ function buildSingleView() {
 
   state.selection = new Set();
   state.rotation = new Map();
+  resetThumbQueue();
   const list = $('#pageList');
   list.innerHTML = '';
   // 为每一页生成一张卡片
@@ -396,7 +415,7 @@ function buildSingleView() {
   state.io = new IntersectionObserver(entries => {
     entries.forEach(en => {
       if (!en.isIntersecting) return;
-      renderThumb(+en.target.dataset.page, en.target);
+      queueThumb(+en.target.dataset.page, en.target);
       state.io.unobserve(en.target);
     });
   }, { root: null, rootMargin: '400px' });
@@ -436,6 +455,36 @@ function makeCard(n) {
  * @param {number} n 页码
  * @param {HTMLElement} card 页面卡片元素
  */
+/* ---------------- 缩略图渲染队列 ----------------
+ * 滚动快时 IntersectionObserver 会一次触发几十张卡片，
+ * 全部并行渲染会瞬间吃满内存、掉帧。这里限制同时渲染的数量。
+ */
+const thumbQueue = [];
+let thumbRunning = 0;
+const THUMB_CONCURRENCY = 3;
+
+function queueThumb(n, card) {
+  if (thumbQueue.some(job => job.n === n)) return;   // 同一页不重复排队
+  thumbQueue.push({ n, card });
+  pumpThumbQueue();
+}
+
+function pumpThumbQueue() {
+  while (thumbRunning < THUMB_CONCURRENCY && thumbQueue.length) {
+    const job = thumbQueue.shift();
+    thumbRunning++;
+    renderThumb(job.n, job.card).finally(() => {
+      thumbRunning--;
+      pumpThumbQueue();
+    });
+  }
+}
+
+/** 换文件时清空待渲染队列，避免旧文档的卡片被渲染。 */
+function resetThumbQueue() {
+  thumbQueue.length = 0;
+}
+
 async function renderThumb(n, card) {
   try {
     const page = await state.doc.getPage(n);
@@ -590,7 +639,7 @@ function rotateSelected() {
   // 立即重画这些页的缩略图，否则用户看不出旋转是否生效
   targets.forEach(n => {
     const card = document.querySelector('.card[data-page="' + n + '"]');
-    if (card) renderThumb(n, card);
+    if (card) queueThumb(n, card);
   });
   updateToolState();
   toast('已旋转 ' + targets.length + ' 页');

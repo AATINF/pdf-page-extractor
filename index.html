@@ -460,6 +460,21 @@ main{max-width:760px;margin:0 auto;padding:0 12px}
   width:36px;text-align:right;font-size:12.5px;font-weight:650;
   color:var(--text-2);flex:0 0 auto;
 }
+/* ---------- 目标大小：输入 + 单位 + 预设 ---------- */
+.target-block{margin-top:2px}
+.target-input{display:flex;gap:8px;align-items:center}
+.target-input .input{flex:1;min-width:0}
+.seg-unit{flex:0 0 auto;width:104px;padding:3px;border-radius:10px}
+.seg-unit .seg-item{padding:8px 4px;font-size:12px;flex-direction:row;border-radius:8px}
+.presets{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.preset{
+  padding:5px 11px;border-radius:8px;border:1px solid var(--line-2);
+  background:var(--surface);font-size:11.5px;font-weight:600;color:var(--text-2);
+  transition:transform .14s var(--ease),background .14s var(--ease),border-color .14s var(--ease);
+}
+.preset:active{transform:scale(.96)}
+.preset.on{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
+
 .es-label{width:52px}
 @media (max-width:480px){
   .es-label{width:48px;font-size:11.5px}
@@ -954,10 +969,21 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
 
       <div class="card-panel">
         <h3>目标大小（可选）</h3>
-        <div class="row">
-          <span class="es-label">不超过</span>
-          <input class="input" id="cmpTarget" type="number" min="0" placeholder="留空则不限制">
-          <span class="lbl">KB</span>
+        <div class="target-block">
+          <div class="target-input">
+            <input class="input" id="cmpTarget" type="number" min="0" placeholder="留空则不限制">
+            <div class="seg seg-unit" data-name="cmpunit">
+              <button class="seg-item active" data-value="kb">KB</button>
+              <button class="seg-item" data-value="mb">MB</button>
+            </div>
+          </div>
+          <div class="presets">
+            <button class="preset" data-kb="200">200K</button>
+            <button class="preset" data-kb="500">500K</button>
+            <button class="preset" data-kb="1024">1M</button>
+            <button class="preset" data-kb="2048">2M</button>
+            <button class="preset" data-kb="5120">5M</button>
+          </div>
         </div>
         <p class="hint">填了会自动降质量去逼近目标，可能牺牲清晰度；达不到会明确告诉你实际结果。</p>
       </div>
@@ -988,9 +1014,20 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
           <input class="input" id="cmpMaxSide" type="number" min="100" placeholder="留空保持原尺寸">
           <span class="lbl">px</span>
         </div>
-        <div class="es-row"><span class="es-label">目标</span>
-          <input class="input" id="cmpImgTarget" type="number" min="1" placeholder="每张不超过">
-          <span class="lbl">KB</span>
+        <div class="target-block">
+          <div class="target-input">
+            <input class="input" id="cmpImgTarget" type="number" min="1" placeholder="每张不超过（留空则按质量）">
+            <div class="seg seg-unit" data-name="cmpimgunit">
+              <button class="seg-item active" data-value="kb">KB</button>
+              <button class="seg-item" data-value="mb">MB</button>
+            </div>
+          </div>
+          <div class="presets">
+            <button class="preset" data-kb="100">100K</button>
+            <button class="preset" data-kb="200">200K</button>
+            <button class="preset" data-kb="500">500K</button>
+            <button class="preset" data-kb="1024">1M</button>
+          </div>
         </div>
         <p class="hint">填了目标大小会优先保证体积，必要时自动降低分辨率和质量。</p>
       </div>

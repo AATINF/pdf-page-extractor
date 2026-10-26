@@ -30,6 +30,26 @@ function segValue(name, fallback) {
   return el ? el.dataset.value : fallback;
 }
 
+/** 设置分段控件的选中项。 */
+function setSeg(seg, value) {
+  if (!seg) return;
+  seg.querySelectorAll('.seg-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.value === value);
+  });
+}
+
+/**
+ * 读取"目标大小"输入框，按当前单位换算成 KB。
+ * 返回 0 表示不限制。
+ */
+function readTargetKB(inputId, unitName) {
+  const el = document.getElementById(inputId);
+  if (!el) return 0;
+  const v = parseFloat(el.value) || 0;
+  if (v <= 0) return 0;
+  return segValue(unitName, 'kb') === 'mb' ? v * 1024 : v;
+}
+
 /** canvas 转 Blob。 */
 function canvasBlob(canvas, mime, quality) {
   return new Promise(resolve => canvas.toBlob(resolve, mime, quality));
@@ -334,7 +354,7 @@ async function losslessSave(bytes) {
 async function cvCompressPdf() {
   if (!cv.cmpDoc) { toast('请先选择一个 PDF'); return; }
   const mode = segValue('cmpmode', 'lossy');
-  const targetKB = parseFloat($('#cmpTarget').value) || 0;
+  const targetKB = readTargetKB('cmpTarget', 'cmpunit');
   const targetBytes = targetKB * 1024;
   const baseName = cv.cmpName.replace(/\.pdf$/i, '') || 'output';
   const originSize = cv.cmpBytes.length;
@@ -446,7 +466,7 @@ async function cvCompressImages() {
   if (!cv.cmpImages.length) { toast('请先添加图片'); return; }
   const quality = (parseInt($('#cmpQuality').value) || 75) / 100;
   const maxSide = parseInt($('#cmpMaxSide').value) || 0;
-  const targetKB = parseFloat($('#cmpImgTarget').value) || 0;
+  const targetKB = readTargetKB('cmpImgTarget', 'cmpimgunit');
   const targetBytes = targetKB * 1024;
 
   try {
@@ -562,6 +582,34 @@ function cvInit() {
   on('#cmpQuality', 'input', e => {
     const v = $('#cmpQualityVal');
     if (v) v.textContent = e.target.value;
+  });
+
+  // 目标大小快捷预设：点一下自动填值并切到合适单位
+  document.querySelectorAll('.preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const block = btn.closest('.target-block');
+      if (!block) return;
+      const input = block.querySelector('input');
+      const seg = block.querySelector('.seg');
+      const kb = parseInt(btn.dataset.kb, 10) || 0;
+      if (!input) return;
+      if (kb >= 1024) {
+        input.value = String(+(kb / 1024).toFixed(1));
+        setSeg(seg, 'mb');
+      } else {
+        input.value = String(kb);
+        setSeg(seg, 'kb');
+      }
+      block.querySelectorAll('.preset').forEach(b => b.classList.toggle('on', b === btn));
+    });
+  });
+
+  // 手动改数值时取消预设高亮
+  document.querySelectorAll('.target-block input').forEach(input => {
+    input.addEventListener('input', () => {
+      const block = input.closest('.target-block');
+      if (block) block.querySelectorAll('.preset').forEach(b => b.classList.remove('on'));
+    });
   });
 }
 

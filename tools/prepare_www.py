@@ -36,11 +36,20 @@ def main():
             print('  +', f)
         total += src.stat().st_size
 
+    # pdf.worker.min.js 已被 tools/build.py 内联进 index.html，
+    # 再复制一份进 APK 等于白占 1.1MB，这里显式排除
+    REDUNDANT = {'lib/pdf.worker.min.js'}
+
     for d in DIRS:
         src = ROOT / d
         if not src.exists():
             sys.exit('缺少目录: ' + d)
-        shutil.copytree(src, WWW / d)
+        shutil.copytree(src, WWW / d, ignore=shutil.ignore_patterns())
+        for rel in REDUNDANT:
+            p = WWW / rel
+            if p.exists() and p.parts[len(WWW.parts)] == d:
+                p.unlink()
+                print('  - 跳过冗余文件', rel)
         n = 0
         for p in (WWW / d).rglob('*'):
             if p.is_file():

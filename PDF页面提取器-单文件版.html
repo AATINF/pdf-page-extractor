@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>PDF 页面提取器 v1.3.0</title>
+<title>PDF 页面提取器 v1.4.0</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -460,6 +460,21 @@ main{max-width:760px;margin:0 auto;padding:0 12px}
   width:36px;text-align:right;font-size:12.5px;font-weight:650;
   color:var(--text-2);flex:0 0 auto;
 }
+/* ---------- 目标大小：输入 + 单位 + 预设 ---------- */
+.target-block{margin-top:2px}
+.target-input{display:flex;gap:8px;align-items:center}
+.target-input .input{flex:1;min-width:0}
+.seg-unit{flex:0 0 auto;width:104px;padding:3px;border-radius:10px}
+.seg-unit .seg-item{padding:8px 4px;font-size:12px;flex-direction:row;border-radius:8px}
+.presets{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.preset{
+  padding:5px 11px;border-radius:8px;border:1px solid var(--line-2);
+  background:var(--surface);font-size:11.5px;font-weight:600;color:var(--text-2);
+  transition:transform .14s var(--ease),background .14s var(--ease),border-color .14s var(--ease);
+}
+.preset:active{transform:scale(.96)}
+.preset.on{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
+
 .es-label{width:52px}
 @media (max-width:480px){
   .es-label{width:48px;font-size:11.5px}
@@ -711,7 +726,7 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
 
 <header>
   <div class="h-icon"><svg viewBox="0 0 24 24"><use href="#i-doc"/></svg></div>
-  <h1>PDF 页面提取器 <span class="badge" id="verTag">v1.3.0</span></h1>
+  <h1>PDF 页面提取器 <span class="badge" id="verTag">v1.4.0</span></h1>
   <div class="sub" id="fileInfo">选择或打开一个 PDF，勾选页面后提取为新文件（全程本地处理，文件不会上传）</div>
 </header>
 
@@ -732,7 +747,7 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
       <p class="dz-title">选择一个 PDF 文件</p>
       <p class="dz-desc">勾选任意页面提取为新 PDF，也可以拆分单页、多文件合并</p>
       <button class="dz-cta" onclick="event.stopPropagation();document.getElementById('fileInput').click()"><svg viewBox="0 0 24 24"><use href="#i-folder"/></svg>选择 PDF</button>
-      <p class="dz-foot"><span id="appVer">v1.3.0</span> · 全程在本机处理，文件不会上传</p>
+      <p class="dz-foot"><span id="appVer">v1.4.0</span> · 全程在本机处理，文件不会上传</p>
       <input type="file" id="fileInput" accept="application/pdf,.pdf" class="hidden">
       <div id="urlRow">
         <p style="margin-top:10px;color:var(--sub);font-size:12px">也可以从链接打开：</p>
@@ -954,10 +969,21 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
 
       <div class="card-panel">
         <h3>目标大小（可选）</h3>
-        <div class="row">
-          <span class="es-label">不超过</span>
-          <input class="input" id="cmpTarget" type="number" min="0" placeholder="留空则不限制">
-          <span class="lbl">KB</span>
+        <div class="target-block">
+          <div class="target-input">
+            <input class="input" id="cmpTarget" type="number" min="0" placeholder="留空则不限制">
+            <div class="seg seg-unit" data-name="cmpunit">
+              <button class="seg-item active" data-value="kb">KB</button>
+              <button class="seg-item" data-value="mb">MB</button>
+            </div>
+          </div>
+          <div class="presets">
+            <button class="preset" data-kb="200">200K</button>
+            <button class="preset" data-kb="500">500K</button>
+            <button class="preset" data-kb="1024">1M</button>
+            <button class="preset" data-kb="2048">2M</button>
+            <button class="preset" data-kb="5120">5M</button>
+          </div>
         </div>
         <p class="hint">填了会自动降质量去逼近目标，可能牺牲清晰度；达不到会明确告诉你实际结果。</p>
       </div>
@@ -988,9 +1014,20 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
           <input class="input" id="cmpMaxSide" type="number" min="100" placeholder="留空保持原尺寸">
           <span class="lbl">px</span>
         </div>
-        <div class="es-row"><span class="es-label">目标</span>
-          <input class="input" id="cmpImgTarget" type="number" min="1" placeholder="每张不超过">
-          <span class="lbl">KB</span>
+        <div class="target-block">
+          <div class="target-input">
+            <input class="input" id="cmpImgTarget" type="number" min="1" placeholder="每张不超过（留空则按质量）">
+            <div class="seg seg-unit" data-name="cmpimgunit">
+              <button class="seg-item active" data-value="kb">KB</button>
+              <button class="seg-item" data-value="mb">MB</button>
+            </div>
+          </div>
+          <div class="presets">
+            <button class="preset" data-kb="100">100K</button>
+            <button class="preset" data-kb="200">200K</button>
+            <button class="preset" data-kb="500">500K</button>
+            <button class="preset" data-kb="1024">1M</button>
+          </div>
         </div>
         <p class="hint">填了目标大小会优先保证体积，必要时自动降低分辨率和质量。</p>
       </div>
@@ -1147,7 +1184,25 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 <script>
 'use strict';
 /* global pdfjsLib, PDFLib, JSZip */
-/* PDF 页面提取器 —— 纯前端，本地处理，不上传文件 */
+/**
+ * PDF 页面提取器 —— 核心模块
+ *
+ * 职责
+ *   · 打开 PDF（本地文件 / URL）、密码处理、缩略图渲染、全屏预览
+ *   · 页面选择：点选 / 范围输入 / 全选反选 / 旋转 / 倒序
+ *   · 提取、拆分、合并（普通文档走矢量，加密文档走图片化）
+ *   · 安卓原生壳桥接：保存到下载目录、分享、打开、物理返回键
+ *
+ * 加载顺序（index.html 末尾）
+ *   lib/pdf.min.js → lib/pdf-lib.min.js → lib/jszip.min.js → app.js → convert.js
+ *
+ * 对外提供
+ *   HTML 内 onclick 调用的全局函数；以及供 convert.js 复用的
+ *   $ / $$ / state / download / toast / showBusy / hideBusy
+ *
+ * 约定
+ *   所有处理都在本机完成，代码中不得出现任何网络请求。
+ */
 
 /**
  * DOM 快捷查询：返回匹配选择器的第一个元素。
@@ -1533,6 +1588,7 @@ function buildSingleView() {
 
   state.selection = new Set();
   state.rotation = new Map();
+  resetThumbQueue();
   const list = $('#pageList');
   list.innerHTML = '';
   // 为每一页生成一张卡片
@@ -1543,7 +1599,7 @@ function buildSingleView() {
   state.io = new IntersectionObserver(entries => {
     entries.forEach(en => {
       if (!en.isIntersecting) return;
-      renderThumb(+en.target.dataset.page, en.target);
+      queueThumb(+en.target.dataset.page, en.target);
       state.io.unobserve(en.target);
     });
   }, { root: null, rootMargin: '400px' });
@@ -1583,6 +1639,36 @@ function makeCard(n) {
  * @param {number} n 页码
  * @param {HTMLElement} card 页面卡片元素
  */
+/* ---------------- 缩略图渲染队列 ----------------
+ * 滚动快时 IntersectionObserver 会一次触发几十张卡片，
+ * 全部并行渲染会瞬间吃满内存、掉帧。这里限制同时渲染的数量。
+ */
+const thumbQueue = [];
+let thumbRunning = 0;
+const THUMB_CONCURRENCY = 3;
+
+function queueThumb(n, card) {
+  if (thumbQueue.some(job => job.n === n)) return;   // 同一页不重复排队
+  thumbQueue.push({ n, card });
+  pumpThumbQueue();
+}
+
+function pumpThumbQueue() {
+  while (thumbRunning < THUMB_CONCURRENCY && thumbQueue.length) {
+    const job = thumbQueue.shift();
+    thumbRunning++;
+    renderThumb(job.n, job.card).finally(() => {
+      thumbRunning--;
+      pumpThumbQueue();
+    });
+  }
+}
+
+/** 换文件时清空待渲染队列，避免旧文档的卡片被渲染。 */
+function resetThumbQueue() {
+  thumbQueue.length = 0;
+}
+
 async function renderThumb(n, card) {
   try {
     const page = await state.doc.getPage(n);
@@ -1737,7 +1823,7 @@ function rotateSelected() {
   // 立即重画这些页的缩略图，否则用户看不出旋转是否生效
   targets.forEach(n => {
     const card = document.querySelector('.card[data-page="' + n + '"]');
-    if (card) renderThumb(n, card);
+    if (card) queueThumb(n, card);
   });
   updateToolState();
   toast('已旋转 ' + targets.length + ' 页');
@@ -2324,6 +2410,26 @@ function segValue(name, fallback) {
   return el ? el.dataset.value : fallback;
 }
 
+/** 设置分段控件的选中项。 */
+function setSeg(seg, value) {
+  if (!seg) return;
+  seg.querySelectorAll('.seg-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.value === value);
+  });
+}
+
+/**
+ * 读取"目标大小"输入框，按当前单位换算成 KB。
+ * 返回 0 表示不限制。
+ */
+function readTargetKB(inputId, unitName) {
+  const el = document.getElementById(inputId);
+  if (!el) return 0;
+  const v = parseFloat(el.value) || 0;
+  if (v <= 0) return 0;
+  return segValue(unitName, 'kb') === 'mb' ? v * 1024 : v;
+}
+
 /** canvas 转 Blob。 */
 function canvasBlob(canvas, mime, quality) {
   return new Promise(resolve => canvas.toBlob(resolve, mime, quality));
@@ -2628,7 +2734,7 @@ async function losslessSave(bytes) {
 async function cvCompressPdf() {
   if (!cv.cmpDoc) { toast('请先选择一个 PDF'); return; }
   const mode = segValue('cmpmode', 'lossy');
-  const targetKB = parseFloat($('#cmpTarget').value) || 0;
+  const targetKB = readTargetKB('cmpTarget', 'cmpunit');
   const targetBytes = targetKB * 1024;
   const baseName = cv.cmpName.replace(/\.pdf$/i, '') || 'output';
   const originSize = cv.cmpBytes.length;
@@ -2740,7 +2846,7 @@ async function cvCompressImages() {
   if (!cv.cmpImages.length) { toast('请先添加图片'); return; }
   const quality = (parseInt($('#cmpQuality').value) || 75) / 100;
   const maxSide = parseInt($('#cmpMaxSide').value) || 0;
-  const targetKB = parseFloat($('#cmpImgTarget').value) || 0;
+  const targetKB = readTargetKB('cmpImgTarget', 'cmpimgunit');
   const targetBytes = targetKB * 1024;
 
   try {
@@ -2856,6 +2962,34 @@ function cvInit() {
   on('#cmpQuality', 'input', e => {
     const v = $('#cmpQualityVal');
     if (v) v.textContent = e.target.value;
+  });
+
+  // 目标大小快捷预设：点一下自动填值并切到合适单位
+  document.querySelectorAll('.preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const block = btn.closest('.target-block');
+      if (!block) return;
+      const input = block.querySelector('input');
+      const seg = block.querySelector('.seg');
+      const kb = parseInt(btn.dataset.kb, 10) || 0;
+      if (!input) return;
+      if (kb >= 1024) {
+        input.value = String(+(kb / 1024).toFixed(1));
+        setSeg(seg, 'mb');
+      } else {
+        input.value = String(kb);
+        setSeg(seg, 'kb');
+      }
+      block.querySelectorAll('.preset').forEach(b => b.classList.toggle('on', b === btn));
+    });
+  });
+
+  // 手动改数值时取消预设高亮
+  document.querySelectorAll('.target-block input').forEach(input => {
+    input.addEventListener('input', () => {
+      const block = input.closest('.target-block');
+      if (block) block.querySelectorAll('.preset').forEach(b => b.classList.remove('on'));
+    });
   });
 }
 
