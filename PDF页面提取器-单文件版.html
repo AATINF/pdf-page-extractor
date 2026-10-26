@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>PDF 页面提取器 v1.6.3</title>
+<title>PDF 页面提取器 v1.6.4</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -861,7 +861,7 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
 
 <header>
   <div class="h-icon"><svg viewBox="0 0 24 24"><use href="#i-doc"/></svg></div>
-  <h1>PDF 页面提取器 <span class="badge" id="verTag">v1.6.3</span></h1>
+  <h1>PDF 页面提取器 <span class="badge" id="verTag">v1.6.4</span></h1>
   <div class="sub" id="fileInfo">选择或打开一个 PDF，勾选页面后提取为新文件（全程本地处理，文件不会上传）</div>
   <div class="h-right">
     <button class="h-btn" onclick="openSettings()" title="设置" aria-label="设置">
@@ -887,7 +887,7 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
       <p class="dz-title">选择一个 PDF 文件</p>
       <p class="dz-desc">勾选任意页面提取为新 PDF，也可以拆分单页、多文件合并</p>
       <button class="dz-cta" onclick="event.stopPropagation();document.getElementById('fileInput').click()"><svg viewBox="0 0 24 24"><use href="#i-folder"/></svg>选择 PDF</button>
-      <p class="dz-foot"><span id="appVer">v1.6.3</span> · 全程在本机处理，文件不会上传</p>
+      <p class="dz-foot"><span id="appVer">v1.6.4</span> · 全程在本机处理，文件不会上传</p>
       <input type="file" id="fileInput" accept="application/pdf,.pdf" class="hidden">
       <div id="urlRow">
         <p style="margin-top:10px;color:var(--sub);font-size:12px">也可以从链接打开：</p>
@@ -1443,6 +1443,24 @@ const ANN_ENABLE = (typeof pdfjsLib !== 'undefined' && pdfjsLib.AnnotationMode)
   : 1;
 
 /**
+ * 单文件版把所有资源内联进 HTML，没有 lib/ 目录，也就没有 cMap 文件。
+ * 通过检测外链脚本判断当前是不是单文件版。
+ */
+const IS_SINGLE_FILE = !document.querySelector('script[src*="pdf.min.js"]');
+
+/**
+ * 打开 PDF 的统一参数。
+ *
+ * cMapUrl 很关键：中文 PDF 常用 CID 编码（UniGB-UTF16-H 等），
+ * 若字体没有嵌入，PDF.js 必须靠 cMap 文件做字符映射，否则整页中文是空白。
+ * 单文件版没有这些文件，只能跳过（该场景下会退化成原来的行为）。
+ */
+const PDF_OPTS = Object.assign(
+  { isEvalSupported: false },
+  IS_SINGLE_FILE ? {} : { cMapUrl: './lib/cmaps/', cMapPacked: true }
+);
+
+/**
  * 全局运行状态对象。
  * - bytes：当前打开的 PDF 原始字节（Uint8Array）
  * - doc：pdf.js 解析出的文档对象，用于缩略图、预览与图片化输出
@@ -1900,7 +1918,7 @@ async function openBytes(bytes, name) {
   showBusy('正在解析 PDF…');
   try {
     // 注意：pdf.js 会转移传入的 ArrayBuffer，这里传副本，保留原始字节给 pdf-lib 用
-    const task = pdfjsLib.getDocument({ data: bytes.slice(), isEvalSupported: false });
+    const task = pdfjsLib.getDocument(Object.assign({ data: bytes.slice() }, PDF_OPTS));
     state.task = task;
     state.doc = await task.promise;
     state.encrypted = false;
@@ -1945,7 +1963,7 @@ async function askPasswordAndRetry(attempt) {
   });
   if (pw === null) return false;
   try {
-    const task = pdfjsLib.getDocument({ data: state.bytes.slice(), password: pw, isEvalSupported: false });
+    const task = pdfjsLib.getDocument(Object.assign({ data: state.bytes.slice(), password: pw }, PDF_OPTS));
     state.task = task;
     state.doc = await task.promise;
     state.encrypted = true; // pdf-lib 无法读取加密文件
@@ -2351,7 +2369,7 @@ async function previewMergeFile(i) {
   if (!f.pdfLibDoc) { toast('加密文件暂不支持预览', 2600); return; }
   try {
     showBusy('正在打开预览…');
-    const doc = await pdfjsLib.getDocument({ data: f.bytes.slice() }).promise;
+    const doc = await pdfjsLib.getDocument(Object.assign({ data: f.bytes.slice() }, PDF_OPTS)).promise;
     hideBusy();
     openPdfPreview(doc, f.name, 1, true);
   } catch (e) {
@@ -2756,7 +2774,7 @@ async function mergeAll() {
         // 图片化路径：先解析，必要时请求密码
         let doc;
         try {
-          doc = await pdfjsLib.getDocument({ data: f.bytes.slice(), isEvalSupported: false }).promise;
+          doc = await pdfjsLib.getDocument(Object.assign({ data: f.bytes.slice() }, PDF_OPTS)).promise;
         } catch (e) {
           if (e && (e.name === 'PasswordException' || /password/i.test(e.message || ''))) {
             const pw = await showDialog({
@@ -2766,7 +2784,7 @@ async function mergeAll() {
               okText: '继续',
             });
             if (pw === null) { toast('已跳过加密文件：' + f.name); continue; }
-            doc = await pdfjsLib.getDocument({ data: f.bytes.slice(), password: pw, isEvalSupported: false }).promise;
+            doc = await pdfjsLib.getDocument(Object.assign({ data: f.bytes.slice(), password: pw }, PDF_OPTS)).promise;
           } else {
             throw e;
           }
@@ -3051,7 +3069,7 @@ async function cvLoadPdf(file) {
     const size = bytes.length;
     // PDF.js 会把传入的 ArrayBuffer 转移给 worker，原 buffer 随即 detach，
     // 所以这里传副本，保留原数据供后续使用
-    const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+    const doc = await pdfjsLib.getDocument(Object.assign({ data: bytes.slice() }, PDF_OPTS)).promise;
     cv.pdfDoc = doc;
     cv.pdfBytes = bytes;
     cv.pdfName = file.name;
@@ -3313,7 +3331,7 @@ async function cvLoadCmpPdf(file) {
     const buf = await file.arrayBuffer();
     const bytes = new Uint8Array(buf);
     const size = bytes.length;
-    const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+    const doc = await pdfjsLib.getDocument(Object.assign({ data: bytes.slice() }, PDF_OPTS)).promise;
     cv.cmpDoc = doc;
     cv.cmpBytes = bytes;
     cv.cmpName = file.name;
@@ -3535,7 +3553,7 @@ async function cvCompressPdf() {
     // 生成压缩前后对比（失败不影响主流程；用户可选不再弹出）
     if (beforeThumb && !loadSettings().skipCompare) {
       try {
-        const outDoc = await pdfjsLib.getDocument({ data: outBytes.slice() }).promise;
+        const outDoc = await pdfjsLib.getDocument(Object.assign({ data: outBytes.slice() }, PDF_OPTS)).promise;
         const afterThumb = await renderPageThumb(outDoc, 1, 360);
         outDoc.destroy();
         showCompare(beforeThumb, afterThumb, originSize, blob.size);

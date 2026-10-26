@@ -44,6 +44,24 @@ const ANN_ENABLE = (typeof pdfjsLib !== 'undefined' && pdfjsLib.AnnotationMode)
   : 1;
 
 /**
+ * 单文件版把所有资源内联进 HTML，没有 lib/ 目录，也就没有 cMap 文件。
+ * 通过检测外链脚本判断当前是不是单文件版。
+ */
+const IS_SINGLE_FILE = !document.querySelector('script[src*="pdf.min.js"]');
+
+/**
+ * 打开 PDF 的统一参数。
+ *
+ * cMapUrl 很关键：中文 PDF 常用 CID 编码（UniGB-UTF16-H 等），
+ * 若字体没有嵌入，PDF.js 必须靠 cMap 文件做字符映射，否则整页中文是空白。
+ * 单文件版没有这些文件，只能跳过（该场景下会退化成原来的行为）。
+ */
+const PDF_OPTS = Object.assign(
+  { isEvalSupported: false },
+  IS_SINGLE_FILE ? {} : { cMapUrl: './lib/cmaps/', cMapPacked: true }
+);
+
+/**
  * 全局运行状态对象。
  * - bytes：当前打开的 PDF 原始字节（Uint8Array）
  * - doc：pdf.js 解析出的文档对象，用于缩略图、预览与图片化输出
@@ -501,7 +519,7 @@ async function openBytes(bytes, name) {
   showBusy('正在解析 PDF…');
   try {
     // 注意：pdf.js 会转移传入的 ArrayBuffer，这里传副本，保留原始字节给 pdf-lib 用
-    const task = pdfjsLib.getDocument({ data: bytes.slice(), isEvalSupported: false });
+    const task = pdfjsLib.getDocument(Object.assign({ data: bytes.slice() }, PDF_OPTS));
     state.task = task;
     state.doc = await task.promise;
     state.encrypted = false;
@@ -546,7 +564,7 @@ async function askPasswordAndRetry(attempt) {
   });
   if (pw === null) return false;
   try {
-    const task = pdfjsLib.getDocument({ data: state.bytes.slice(), password: pw, isEvalSupported: false });
+    const task = pdfjsLib.getDocument(Object.assign({ data: state.bytes.slice(), password: pw }, PDF_OPTS));
     state.task = task;
     state.doc = await task.promise;
     state.encrypted = true; // pdf-lib 无法读取加密文件
@@ -952,7 +970,7 @@ async function previewMergeFile(i) {
   if (!f.pdfLibDoc) { toast('加密文件暂不支持预览', 2600); return; }
   try {
     showBusy('正在打开预览…');
-    const doc = await pdfjsLib.getDocument({ data: f.bytes.slice() }).promise;
+    const doc = await pdfjsLib.getDocument(Object.assign({ data: f.bytes.slice() }, PDF_OPTS)).promise;
     hideBusy();
     openPdfPreview(doc, f.name, 1, true);
   } catch (e) {
@@ -1357,7 +1375,7 @@ async function mergeAll() {
         // 图片化路径：先解析，必要时请求密码
         let doc;
         try {
-          doc = await pdfjsLib.getDocument({ data: f.bytes.slice(), isEvalSupported: false }).promise;
+          doc = await pdfjsLib.getDocument(Object.assign({ data: f.bytes.slice() }, PDF_OPTS)).promise;
         } catch (e) {
           if (e && (e.name === 'PasswordException' || /password/i.test(e.message || ''))) {
             const pw = await showDialog({
@@ -1367,7 +1385,7 @@ async function mergeAll() {
               okText: '继续',
             });
             if (pw === null) { toast('已跳过加密文件：' + f.name); continue; }
-            doc = await pdfjsLib.getDocument({ data: f.bytes.slice(), password: pw, isEvalSupported: false }).promise;
+            doc = await pdfjsLib.getDocument(Object.assign({ data: f.bytes.slice(), password: pw }, PDF_OPTS)).promise;
           } else {
             throw e;
           }

@@ -112,7 +112,7 @@ async function cvLoadPdf(file) {
     const size = bytes.length;
     // PDF.js 会把传入的 ArrayBuffer 转移给 worker，原 buffer 随即 detach，
     // 所以这里传副本，保留原数据供后续使用
-    const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+    const doc = await pdfjsLib.getDocument(Object.assign({ data: bytes.slice() }, PDF_OPTS)).promise;
     cv.pdfDoc = doc;
     cv.pdfBytes = bytes;
     cv.pdfName = file.name;
@@ -374,7 +374,7 @@ async function cvLoadCmpPdf(file) {
     const buf = await file.arrayBuffer();
     const bytes = new Uint8Array(buf);
     const size = bytes.length;
-    const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+    const doc = await pdfjsLib.getDocument(Object.assign({ data: bytes.slice() }, PDF_OPTS)).promise;
     cv.cmpDoc = doc;
     cv.cmpBytes = bytes;
     cv.cmpName = file.name;
@@ -596,7 +596,7 @@ async function cvCompressPdf() {
     // 生成压缩前后对比（失败不影响主流程；用户可选不再弹出）
     if (beforeThumb && !loadSettings().skipCompare) {
       try {
-        const outDoc = await pdfjsLib.getDocument({ data: outBytes.slice() }).promise;
+        const outDoc = await pdfjsLib.getDocument(Object.assign({ data: outBytes.slice() }, PDF_OPTS)).promise;
         const afterThumb = await renderPageThumb(outDoc, 1, 360);
         outDoc.destroy();
         showCompare(beforeThumb, afterThumb, originSize, blob.size);
