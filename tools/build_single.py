@@ -26,6 +26,7 @@ def main():
     html = re.sub(r'(id="appVer">)v[\d.]+', r'\g<1>v' + version, html)
 
     html = inline_script(html, 'app.js', os.path.join(ROOT, 'app.js'))
+    html = inline_script(html, 'convert.js', os.path.join(ROOT, 'convert.js'))
     html = inline_script(html, 'lib/pdf.min.js', os.path.join(ROOT, 'lib', 'pdf.min.js'))
     html = inline_script(html, 'lib/pdf-lib.min.js', os.path.join(ROOT, 'lib', 'pdf-lib.min.js'))
     html = inline_script(html, 'lib/jszip.min.js', os.path.join(ROOT, 'lib', 'jszip.min.js'))

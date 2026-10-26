@@ -411,6 +411,61 @@ main{max-width:760px;margin:0 auto;padding:0 12px}
 .switch-btn.on .sw{background:var(--brand)}
 .switch-btn.on .sw i{transform:translateX(13px)}
 
+/* ---------- 转换 / 压缩面板 ---------- */
+.btn.block{width:100%;display:flex;justify-content:center}
+.btn.lg{height:52px;font-size:15px;border-radius:13px;margin-top:2px}
+.seg-lg{padding:4px;border-radius:13px;margin:12px 0}
+.seg-lg .seg-item{padding:10px 6px;font-size:13.5px;border-radius:10px;flex-direction:row;gap:7px}
+.seg-lg .seg-item svg{width:15px;height:15px;flex:0 0 auto}
+
+.cv-file{
+  display:flex;gap:11px;align-items:center;margin-top:12px;
+  padding:11px 12px;border-radius:12px;background:var(--surface-2);
+}
+.cv-file svg{width:20px;height:20px;color:var(--brand);flex:0 0 auto}
+.cv-file div{min-width:0;flex:1}
+.cv-file b{display:block;font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cv-file span{display:block;font-size:11.5px;color:var(--text-3);margin-top:2px}
+
+.img-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px;border-radius:11px;background:var(--surface-2);margin-top:8px;
+}
+.img-item img{
+  width:44px;height:44px;object-fit:cover;border-radius:8px;
+  flex:0 0 auto;background:var(--line);
+}
+.img-item .ii-meta{flex:1;min-width:0}
+.img-item .ii-name{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.img-item .ii-size{font-size:11px;color:var(--text-3);margin-top:2px}
+.img-item .ii-btns{display:flex;gap:4px;flex:0 0 auto}
+.img-item .ii-btns button{
+  width:30px;height:30px;border-radius:8px;background:var(--surface);
+  border:1px solid var(--line);color:var(--text-2);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .12s;
+}
+.img-item .ii-btns button:active{transform:scale(.93)}
+
+.range-row{display:flex;align-items:center;gap:11px}
+.range{
+  flex:1;min-width:0;-webkit-appearance:none;appearance:none;
+  height:4px;border-radius:99px;background:var(--line-2);outline:none;
+}
+.range::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--brand);box-shadow:0 1px 4px rgba(37,99,235,.45);cursor:pointer;
+}
+.range-val{
+  width:36px;text-align:right;font-size:12.5px;font-weight:650;
+  color:var(--text-2);flex:0 0 auto;
+}
+.es-label{width:52px}
+@media (max-width:480px){
+  .es-label{width:48px;font-size:11.5px}
+  .seg-lg .seg-item{font-size:12.5px;padding:9px 4px}
+}
+
 /* ---------- 徽章 ---------- */
 .badge{
   display:inline-flex;align-items:center;gap:4px;
@@ -646,6 +701,11 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
 <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
 <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></symbol>
 <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+<symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></symbol>
+<symbol id="i-compress" viewBox="0 0 24 24"><path d="M9 4v6H3"/><path d="M15 20v-6h6"/><path d="M3 10l6-6"/><path d="M21 14l-6 6"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M21 16l-5-5-6 6"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></symbol>
+<symbol id="i-folder-open" viewBox="0 0 24 24"><path d="M3 8V6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2"/><path d="M3 8h18l-2 10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
 <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
 </svg>
 
@@ -656,8 +716,10 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
 </header>
 
 <div class="tabs">
-  <button class="tab active" id="tabSingle" onclick="switchMode('single')"><svg viewBox="0 0 24 24"><use href="#i-doc"/></svg>提取页面</button>
-  <button class="tab" id="tabMerge" onclick="switchMode('merge')"><svg viewBox="0 0 24 24"><use href="#i-merge"/></svg>合并 PDF</button>
+  <button class="tab active" id="tabSingle" onclick="switchMode('single')"><svg viewBox="0 0 24 24"><use href="#i-doc"/></svg>提取</button>
+  <button class="tab" id="tabMerge" onclick="switchMode('merge')"><svg viewBox="0 0 24 24"><use href="#i-merge"/></svg>合并</button>
+  <button class="tab" id="tabConvert" onclick="switchMode('convert')"><svg viewBox="0 0 24 24"><use href="#i-swap"/></svg>转换</button>
+  <button class="tab" id="tabCompress" onclick="switchMode('compress')"><svg viewBox="0 0 24 24"><use href="#i-compress"/></svg>压缩</button>
 </div>
 
 <main>
@@ -770,6 +832,173 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
     </div>
   </section>
 
+  <!-- ============ 转换 ============ -->
+  <section id="panelConvert" class="hidden">
+
+    <div class="seg seg-lg" id="convModeSeg">
+      <button class="seg-item active" data-value="toImage"><svg viewBox="0 0 24 24"><use href="#i-image"/></svg>PDF → 图片</button>
+      <button class="seg-item" data-value="toPdf"><svg viewBox="0 0 24 24"><use href="#i-doc"/></svg>图片 → PDF</button>
+    </div>
+
+    <!-- PDF → 图片 -->
+    <div id="convToImage">
+      <div class="card-panel">
+        <h3>选择 PDF</h3>
+        <button class="btn primary block" onclick="document.getElementById('cvPdfInput').click()">
+          <svg viewBox="0 0 24 24"><use href="#i-folder-open"/></svg>选择 PDF 文件
+        </button>
+        <input type="file" id="cvPdfInput" accept="application/pdf,.pdf" class="hidden">
+        <div class="cv-file hidden" id="cvPdfInfo">
+          <svg viewBox="0 0 24 24"><use href="#i-doc"/></svg>
+          <div><b id="cvPdfName">-</b><span id="cvPdfMeta">-</span></div>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <h3>输出设置</h3>
+        <div class="es-row"><span class="es-label">格式</span>
+          <div class="seg" data-name="imgfmt2">
+            <button class="seg-item active" data-value="jpeg">JPEG<em>体积小</em></button>
+            <button class="seg-item" data-value="png">PNG<em>无损</em></button>
+          </div>
+        </div>
+        <div class="es-row"><span class="es-label">清晰度</span>
+          <div class="seg" data-name="dpi">
+            <button class="seg-item" data-value="1">1x<em>72 DPI</em></button>
+            <button class="seg-item active" data-value="2">2x<em>144 DPI</em></button>
+            <button class="seg-item" data-value="3">3x<em>216 DPI</em></button>
+          </div>
+        </div>
+        <div class="es-row"><span class="es-label">范围</span>
+          <div class="seg" data-name="cvscope">
+            <button class="seg-item active" data-value="all">全部页面</button>
+            <button class="seg-item" data-value="sel">已选页面</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn primary block lg" onclick="cvExportImages()">导出图片</button>
+      <p class="note" style="margin:10px 4px 0">多页会打包成 ZIP；单页直接给图片文件。</p>
+    </div>
+
+    <!-- 图片 → PDF -->
+    <div id="convToPdf" class="hidden">
+      <div class="card-panel">
+        <h3>图片列表</h3>
+        <button class="btn primary block" onclick="document.getElementById('cvImgInput').click()">
+          <svg viewBox="0 0 24 24"><use href="#i-image"/></svg>添加图片（可多选）
+        </button>
+        <input type="file" id="cvImgInput" accept="image/*" multiple class="hidden">
+        <div id="cvImgList"></div>
+        <p class="note hidden" id="cvImgEmpty">还没有图片。支持 JPG / PNG / WebP。</p>
+      </div>
+
+      <div class="card-panel">
+        <h3>页面设置</h3>
+        <div class="es-row"><span class="es-label">尺寸</span>
+          <div class="seg" data-name="pagesize">
+            <button class="seg-item active" data-value="a4">A4 适应</button>
+            <button class="seg-item" data-value="origin">原图尺寸</button>
+          </div>
+        </div>
+        <div class="es-row"><span class="es-label">边距</span>
+          <div class="seg" data-name="cvmargin">
+            <button class="seg-item active" data-value="0">无</button>
+            <button class="seg-item" data-value="24">小</button>
+            <button class="seg-item" data-value="48">中</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn primary block lg" id="cvMakeBtn" onclick="cvMakePdf()" disabled>生成 PDF</button>
+    </div>
+  </section>
+
+  <!-- ============ 压缩 ============ -->
+  <section id="panelCompress" class="hidden">
+
+    <div class="seg seg-lg" id="cmpModeSeg">
+      <button class="seg-item active" data-value="pdf"><svg viewBox="0 0 24 24"><use href="#i-doc"/></svg>PDF 压缩</button>
+      <button class="seg-item" data-value="image"><svg viewBox="0 0 24 24"><use href="#i-image"/></svg>图片压缩</button>
+    </div>
+
+    <!-- PDF 压缩 -->
+    <div id="cmpPdf">
+      <div class="card-panel">
+        <h3>选择 PDF</h3>
+        <button class="btn primary block" onclick="document.getElementById('cmpPdfInput').click()">
+          <svg viewBox="0 0 24 24"><use href="#i-folder-open"/></svg>选择 PDF 文件
+        </button>
+        <input type="file" id="cmpPdfInput" accept="application/pdf,.pdf" class="hidden">
+        <div class="cv-file hidden" id="cmpPdfInfo">
+          <svg viewBox="0 0 24 24"><use href="#i-doc"/></svg>
+          <div><b id="cmpPdfName">-</b><span id="cmpPdfMeta">-</span></div>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <h3>压缩方式</h3>
+        <div class="seg" data-name="cmpmode">
+          <button class="seg-item active" data-value="lossy">图片化<em>显著变小</em></button>
+          <button class="seg-item" data-value="lossless">无损清理<em>保留文字</em></button>
+        </div>
+        <p class="hint" id="cmpHint">图片化：每页转成图片重拼，体积能降很多，但文字不可再选中、搜索。无损清理：只去冗余数据，体积变化通常很小。</p>
+        <div class="es-row" id="cmpDpiRow" style="margin-top:12px"><span class="es-label">清晰度</span>
+          <div class="seg" data-name="cmpdpi">
+            <button class="seg-item" data-value="1">1x<em>72 DPI</em></button>
+            <button class="seg-item active" data-value="1.5">1.5x<em>108 DPI</em></button>
+            <button class="seg-item" data-value="2">2x<em>144 DPI</em></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <h3>目标大小（可选）</h3>
+        <div class="row">
+          <span class="es-label">不超过</span>
+          <input class="input" id="cmpTarget" type="number" min="0" placeholder="留空则不限制">
+          <span class="lbl">KB</span>
+        </div>
+        <p class="hint">填了会自动降质量去逼近目标，可能牺牲清晰度；达不到会明确告诉你实际结果。</p>
+      </div>
+
+      <button class="btn primary block lg" onclick="cvCompressPdf()">开始压缩</button>
+    </div>
+
+    <!-- 图片压缩 -->
+    <div id="cmpImage" class="hidden">
+      <div class="card-panel">
+        <h3>图片列表</h3>
+        <button class="btn primary block" onclick="document.getElementById('cmpImgInput').click()">
+          <svg viewBox="0 0 24 24"><use href="#i-image"/></svg>添加图片（可多选）
+        </button>
+        <input type="file" id="cmpImgInput" accept="image/*" multiple class="hidden">
+        <div id="cmpImgList"></div>
+        <p class="note hidden" id="cmpImgEmpty">还没有图片。支持 JPG / PNG / WebP。</p>
+      </div>
+
+      <div class="card-panel">
+        <h3>压缩参数</h3>
+        <div class="range-row">
+          <span class="es-label">质量</span>
+          <input type="range" id="cmpQuality" min="10" max="95" value="75" class="range">
+          <span class="range-val" id="cmpQualityVal">75</span>
+        </div>
+        <div class="es-row" style="margin-top:12px"><span class="es-label">最大边长</span>
+          <input class="input" id="cmpMaxSide" type="number" min="100" placeholder="留空保持原尺寸">
+          <span class="lbl">px</span>
+        </div>
+        <div class="es-row"><span class="es-label">目标</span>
+          <input class="input" id="cmpImgTarget" type="number" min="1" placeholder="每张不超过">
+          <span class="lbl">KB</span>
+        </div>
+        <p class="hint">填了目标大小会优先保证体积，必要时自动降低分辨率和质量。</p>
+      </div>
+
+      <button class="btn primary block lg" onclick="cvCompressImages()">压缩并导出</button>
+    </div>
+  </section>
+
 </main>
 
 <!-- 底部操作栏 -->
@@ -861,5 +1090,6 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/jszip.min.js"></script>
 <script src="app.js"></script>
+<script src="convert.js"></script>
 </body>
 </html>

@@ -8,7 +8,7 @@ import json, re, shutil, pathlib, sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 WWW = ROOT / 'www'
 
-FILES = ['index.html', 'app.js', 'manifest.webmanifest']
+FILES = ['index.html', 'app.js', 'convert.js', 'manifest.webmanifest']
 DIRS = ['lib', 'icons']
 
 def main():

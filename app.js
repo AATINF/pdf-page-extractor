@@ -1028,10 +1028,19 @@ async function mergeAll() {
  */
 function switchMode(m) {
   state.mode = m;
-  $('#tabSingle').classList.toggle('active', m === 'single');
-  $('#tabMerge').classList.toggle('active', m === 'merge');
-  $('#panelSingle').classList.toggle('hidden', m !== 'single');
-  $('#panelMerge').classList.toggle('hidden', m !== 'merge');
+  ['single', 'merge', 'convert', 'compress'].forEach(k => {
+    const tab = $('#tab' + k.charAt(0).toUpperCase() + k.slice(1));
+    if (tab) tab.classList.toggle('active', m === k);
+    const panel = $('#panel' + k.charAt(0).toUpperCase() + k.slice(1));
+    if (panel) panel.classList.toggle('hidden', m !== k);
+  });
+  // 转换/压缩模式不需要底部的选页工具条
+  if (m === 'convert' || m === 'compress') {
+    $('#bottombar').classList.add('hidden');
+  } else if (state.numPages) {
+    $('#bottombar').classList.remove('hidden');
+  }
+  syncBottomBar();
 }
 
 let dlgResolve = null;
