@@ -85,10 +85,23 @@ function toast(msg, ms = 2400) {
 }
 
 /** 显示全屏处理中遮罩。@param {string} text 进度文案 */
-function showBusy(text) { $('#busyText').textContent = text || '处理中…'; $('#busy').classList.remove('hidden'); }
+function showBusy(text, canCancel) {
+  $('#busyText').textContent = text || '处理中…';
+  const btn = $('#busyCancel');
+  if (btn) {
+    btn.classList.toggle('hidden', !canCancel);
+    if (canCancel) btn.textContent = '取消';
+  }
+  $('#busy').classList.remove('hidden');
+}
 
 /** 隐藏全屏处理中遮罩。 */
-function hideBusy()     { $('#busy').classList.add('hidden'); }
+function hideBusy() {
+  $('#busy').classList.add('hidden');
+  const btn = $('#busyCancel');
+  if (btn) btn.classList.add('hidden');
+  if (typeof cvResetCancel === 'function') cvResetCancel();
+}
 
 /**
  * 从文件名中剥离 .pdf 后缀，作为输出文件名的基底。
@@ -167,6 +180,79 @@ function toggleAskName() {
   saveSettings({ askName: next });
   $('#setAskName').classList.toggle('on', next);
   toast(next ? '导出时会先问你文件名' : '导出时直接使用默认文件名', 2200);
+}
+
+/* ---------------- 导出历史 ---------------- */
+
+const HISTORY_KEY = 'pdfextractor.history';
+const HISTORY_MAX = 20;
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]') || []; } catch (e) { return []; }
+}
+
+function addHistory(entry) {
+  const list = loadHistory();
+  list.unshift(entry);
+  if (list.length > HISTORY_MAX) list.length = HISTORY_MAX;
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch (e) { /* 忽略 */ }
+}
+
+function clearHistory() {
+  try { localStorage.removeItem(HISTORY_KEY); } catch (e) { /* 忽略 */ }
+  renderHistory();
+  toast('历史已清空', 2000);
+}
+
+function openHistory() {
+  renderHistory();
+  $('#historyDialog').classList.remove('hidden');
+}
+
+function closeHistory() {
+  $('#historyDialog').classList.add('hidden');
+}
+
+function renderHistory() {
+  const list = loadHistory();
+  const wrap = $('#historyList');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  list.forEach((h, i) => {
+    const row = document.createElement('div');
+    row.className = 'history-row';
+    const d = new Date(h.time || Date.now());
+    const pad = n => String(n).padStart(2, '0');
+    const when = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    row.innerHTML =
+      '<div class="hr-main"><div class="hr-name"></div><div class="hr-meta"></div></div>' +
+      '<div class="hr-btns">' +
+        '<button data-i="' + i + '" data-a="open">打开</button>' +
+        '<button data-i="' + i + '" data-a="share">分享</button>' +
+      '</div>';
+    row.querySelector('.hr-name').textContent = h.name || '(未命名)';
+    row.querySelector('.hr-meta').textContent = when + ' · ' + fmtSize(h.size || 0);
+    row.querySelector('.hr-btns').addEventListener('click', e => {
+      const a = e.target.dataset.a;
+      if (a) historyAction(list[i], a);
+    });
+    wrap.appendChild(row);
+  });
+  const empty = $('#historyEmpty');
+  if (empty) empty.classList.toggle('hidden', list.length > 0);
+}
+
+async function historyAction(item, act) {
+  if (!item || !item.uri) { toast('浏览器里无法重新打开，请在 App 内使用', 3000); return; }
+  const P = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.FileSaver;
+  if (!P) { toast('仅 App 内支持', 2400); return; }
+  try {
+    const mime = item.mime || 'application/pdf';
+    if (act === 'open') await P.openFile({ uri: item.uri, mime });
+    else await P.share({ uri: item.uri, mime });
+  } catch (e) {
+    toast('文件可能已被移动或删除', 3000);
+  }
 }
 
 /* ---------------- 重命名弹窗 ---------------- */
@@ -248,6 +334,7 @@ async function saveViaNative(blob, name) {
     const mime = blob.type || 'application/pdf';
     const ret = await window.Capacitor.Plugins.FileSaver.save({ data, fileName: name, mime });
     lastSaved = { uri: ret.uri, name, mime };
+    addHistory({ name, size: blob.size, time: Date.now(), uri: ret.uri, mime });
     hideBusy();
     showSaveSheet(name, ret.displayPath || ret.uri);
   } catch (e) {
@@ -801,31 +888,159 @@ function addCustom() {
  * @param {number} n 页码
  */
 function openPreview(n) {
-  state.preview = { page: n, zoom: 1 };
-  $('#pvTitle').textContent = '第 ' + n + ' / ' + state.numPages + ' 页';
+  openPdfPreview(state.doc, '', n);
+}
+
+/**
+ * 用任意 pdf.js 文档打开预览（合并 / 转换 / 压缩模式复用）。
+ * @param {Object} doc pdf.js 文档对象
+ * @param {string} name 显示在标题里的文件名，可为空
+ * @param {number} page 起始页
+ */
+function openPdfPreview(doc, name, page) {
+  if (!doc) return;
+  const total = doc.numPages || 1;
+  const p = Math.max(1, Math.min(page || 1, total));
+  state.preview = { type: 'pdf', doc, page: p, zoom: 1, title: name || '' };
   $('#previewModal').classList.remove('hidden');
+  applyPreviewMode();
+  $('#pvTitle').textContent =
+    (name ? name + ' · ' : '') + '第 ' + p + ' / ' + total + ' 页';
   renderPreview();
 }
 
+/**
+ * 打开图片预览（用于「图片 → PDF」「图片压缩」的列表）。
+ * @param {Array} list 图片数组，元素需含 file / name
+ * @param {number} index 起始下标
+ */
+function openImagePreview(list, index) {
+  if (!list || !list.length) return;
+  state.preview = {
+    type: 'image',
+    list,
+    index: Math.max(0, Math.min(index, list.length - 1)),
+    zoom: 1,
+    rotation: 0,
+    url: null
+  };
+  $('#previewModal').classList.remove('hidden');
+  applyPreviewMode();
+  renderPreview();
+}
+
+/**
+ * 预览合并列表里的某一个文件。
+ * 加密文件在 pdf.js 侧无法直接打开，先给提示。
+ */
+async function previewMergeFile(i) {
+  const f = state.mergeFiles[i];
+  if (!f) return;
+  if (!f.pdfLibDoc) { toast('加密文件暂不支持预览', 2600); return; }
+  try {
+    showBusy('正在打开预览…');
+    const doc = await pdfjsLib.getDocument({ data: f.bytes.slice() }).promise;
+    hideBusy();
+    openPdfPreview(doc, f.name, 1);
+  } catch (e) {
+    hideBusy();
+    toast('预览失败：' + (e.message || e), 3000);
+  }
+}
+
+/** 按预览类型切换工具栏按钮、容器样式与计数器。 */
+function applyPreviewMode() {
+  const isImg = !!state.preview && state.preview.type === 'image';
+  $$('.pv-pdf-only').forEach(el => el.classList.toggle('hidden', isImg));
+  $$('.pv-img-only').forEach(el => el.classList.toggle('hidden', !isImg));
+  $('#pvCanvas').classList.toggle('hidden', isImg);
+  $('#pvImage').classList.toggle('hidden', !isImg);
+  $('#pvWrap').classList.toggle('img-mode', isImg);
+  $('#pvCounter').classList.toggle('hidden', !isImg);
+}
+
+/** 图片预览的上一张 / 下一张。 */
+function pvStep(d) {
+  const p = state.preview;
+  if (!p || p.type !== 'image') return;
+  const next = p.index + d;
+  if (next < 0 || next >= p.list.length) return;
+  p.index = next;
+  renderImagePreview();
+}
+
+function renderImagePreview() {
+  const p = state.preview;
+  if (!p || p.type !== 'image') return;
+  if (p.url) URL.revokeObjectURL(p.url);
+  const item = p.list[p.index];
+  const url = URL.createObjectURL(item.file);
+  p.url = url;
+  const img = $('#pvImage');
+  img.src = url;
+  img.style.transform = '';
+  $('#pvTitle').textContent = item.name || '图片';
+  $('#pvCounter').textContent = (p.index + 1) + ' / ' + p.list.length;
+}
+
 /** 关闭全屏预览弹窗。 */
-function closePreview() { state.preview = null; $('#previewModal').classList.add('hidden'); }
+function closePreview() {
+  const p = state.preview;
+  if (p && p.url) URL.revokeObjectURL(p.url);
+  // 临时文档（合并/转换/压缩的预览）用完销毁，主文档不能动
+  if (p && p.doc && p.doc !== state.doc && p.doc.destroy) {
+    try { p.doc.destroy(); } catch (e) { /* 忽略 */ }
+  }
+  state.preview = null;
+  $('#previewModal').classList.add('hidden');
+  $('#pvImage').removeAttribute('src');
+}
 
 /**
  * 缩放预览：按方向调整倍率（限制在 0.4 ~ 4 倍之间）。
  * @param {number} d 1 放大、-1 缩小
  */
 function pvZoom(d) {
-  if (!state.preview) return;
-  state.preview.zoom = Math.min(4, Math.max(0.4, state.preview.zoom * (d > 0 ? 1.3 : 1 / 1.3)));
+  const p = state.preview;
+  if (!p) return;
+  p.zoom = Math.min(4, Math.max(0.4, p.zoom * (d > 0 ? 1.3 : 1 / 1.3)));
+  if (p.type === 'image') {
+    $('#pvImage').style.transform = 'scale(' + p.zoom + ') rotate(' + (p.rotation || 0) + 'deg)';
+    return;
+  }
   renderPreview();
 }
 
 /** 预览中旋转当前页 90 度，同步更新 rotation 记录。 */
 function pvRotate() {
-  if (!state.preview) return;
-  const n = state.preview.page;
+  const p = state.preview;
+  if (!p) return;
+  if (p.type === 'image') {
+    p.rotation = ((p.rotation || 0) + 90) % 360;
+    $('#pvImage').style.transform = 'scale(' + p.zoom + ') rotate(' + p.rotation + 'deg)';
+    return;
+  }
+  const n = p.page;
   state.rotation.set(n, ((state.rotation.get(n) || 0) + 90) % 360);
   renderPreview();
+}
+
+/** 图片预览支持左右滑动切换。 */
+function bindPreviewSwipe() {
+  const wrap = $('#pvWrap');
+  if (!wrap) return;
+  let sx = 0, sy = 0;
+  wrap.addEventListener('touchstart', e => {
+    if (!state.preview || state.preview.type !== 'image') return;
+    sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
+  }, { passive: true });
+  wrap.addEventListener('touchend', e => {
+    if (!state.preview || state.preview.type !== 'image') return;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) pvStep(dx < 0 ? 1 : -1);
+  }, { passive: true });
 }
 
 /**
@@ -833,9 +1048,12 @@ function pvRotate() {
  */
 async function renderPreview() {
   const p = state.preview;
-  if (!p || !state.doc) return;
+  if (!p) return;
+  if (p.type === 'image') { renderImagePreview(); return; }
+  const doc = p.doc || state.doc;   // 合并 / 转换 / 压缩 的预览用各自临时文档
+  if (!doc) return;
   try {
-    const page = await state.doc.getPage(p.page);
+    const page = await doc.getPage(p.page);
     const v1 = page.getViewport({ scale: 1 });
     // 先按屏宽适配，再叠加用户缩放倍率与页面旋转
     const fit = (window.innerWidth - 24) / v1.width;
@@ -1077,6 +1295,7 @@ function renderMergeList() {
       '<span class="mr-name">' + esc(f.name) + '</span>' +
       '<span class="mr-badge">' + badge + '</span>' +
       '<div class="mr-btns">' +
+        '<button data-i="' + i + '" data-a="view" title="预览"><svg viewBox="0 0 24 24" width="15" height="15"><use href="#i-eye"/></svg></button>' +
         '<button data-i="' + i + '" data-a="up" title="上移">↑</button>' +
         '<button data-i="' + i + '" data-a="down" title="下移">↓</button>' +
         '<button data-i="' + i + '" data-a="del" title="移除">✕</button>' +
@@ -1084,6 +1303,7 @@ function renderMergeList() {
     // 为每行按钮绑定排序/删除逻辑
     row.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
       const i2 = +b.dataset.i, a = b.dataset.a;
+      if (a === 'view') { previewMergeFile(i2); return; }
       if (a === 'del') { state.mergeFiles.splice(i2, 1); renderMergeList(); }
       else if (a === 'up' && i2 > 0) {
         // 与上一项交换位置
@@ -1274,6 +1494,8 @@ function init() {
   $('#fileInput').addEventListener('change', onPickFile);
   $('#mergeInput').addEventListener('change', onMergeFiles);
   bindDrag($('#dropzone'));
+
+  bindPreviewSwipe();
 
   // 重命名弹窗
   $('#nameOk').addEventListener('click', () => finishNameDialog(true));

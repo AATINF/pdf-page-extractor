@@ -146,7 +146,8 @@ async function cvExportImages() {
     const base = cv.pdfName.replace(/\.pdf$/i, '') || 'page';
     const items = [];
     for (let k = 0; k < nums.length; k++) {
-      showBusy('正在渲染 ' + (k + 1) + ' / ' + nums.length);
+      cvCheckCancel();
+      showBusy('正在渲染 ' + (k + 1) + ' / ' + nums.length + '（可取消）', true);
       const page = await cv.pdfDoc.getPage(nums[k]);
       const vp = page.getViewport({ scale });
       const canvas = document.createElement('canvas');
@@ -177,6 +178,7 @@ async function cvExportImages() {
     toast('已导出 ' + items.length + ' 张图片');
   } catch (e) {
     hideBusy();
+    if (e && e.cancelled) { toast('已取消，未生成文件', 2400); return; }
     toast('导出失败：' + (e.message || e), 3600);
   }
 }
@@ -194,12 +196,84 @@ async function cvAddImages(files, list, arr, renderFn) {
   renderFn();
 }
 
+/* ---------------- 图片列表拖拽排序 ---------------- */
+
+/**
+ * 长按 300ms 进入拖拽，松手后按新顺序重排数组。
+ * 上下箭头按钮保留，作为备选操作。
+ * @param {string} containerId 列表容器 id
+ * @param {Array} arr 数据数组
+ * @param {Function} renderFn 重排后的重绘函数
+ */
+function bindDragSort(containerId, arr, renderFn) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+
+  let dragEl = null, timer = null, startY = 0, startX = 0;
+
+  wrap.addEventListener('touchstart', e => {
+    const row = e.target.closest('.img-item');
+    if (!row || e.target.closest('button')) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    timer = setTimeout(() => {
+      dragEl = row;
+      row.classList.add('dragging');
+      if (navigator.vibrate) { try { navigator.vibrate(12); } catch (err) {} }
+    }, 300);
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', e => {
+    const y = e.touches[0].clientY;
+    if (!dragEl) {
+      // 还没进入拖拽就大幅移动 → 说明用户想滚动，取消长按
+      if (Math.abs(y - startY) > 10 || Math.abs(e.touches[0].clientX - startX) > 10) {
+        clearTimeout(timer);
+      }
+      return;
+    }
+    e.preventDefault();
+    const rows = [...wrap.children].filter(el => el !== dragEl);
+    let before = null;
+    for (const el of rows) {
+      const r = el.getBoundingClientRect();
+      if (y < r.top + r.height / 2) { before = el; break; }
+    }
+    if (before) wrap.insertBefore(dragEl, before);
+    else wrap.appendChild(dragEl);
+  }, { passive: false });
+
+  const finish = () => {
+    clearTimeout(timer);
+    if (!dragEl) return;
+    dragEl.classList.remove('dragging');
+    dragEl = null;
+    const order = [...wrap.children].map(el => parseInt(el.dataset.idx, 10));
+    if (order.some(isNaN)) { renderFn(); return; }
+    const next = order.map(i => arr[i]).filter(Boolean);
+    arr.length = 0;
+    arr.push(...next);
+    renderFn();
+  };
+  wrap.addEventListener('touchend', finish);
+  wrap.addEventListener('touchcancel', finish);
+}
+
+/** 预览转换 / 压缩模式里已选中的 PDF。 */
+function cvPreviewPdf(which) {
+  const doc = which === 'cv' ? cv.pdfDoc : cv.cmpDoc;
+  const name = which === 'cv' ? cv.pdfName : cv.cmpName;
+  if (!doc) { toast('请先选择文件'); return; }
+  openPdfPreview(doc, name, 1);
+}
+
 function cvRenderImgList() {
   const wrap = $('#cvImgList');
   wrap.innerHTML = '';
   cv.images.forEach((it, i) => {
     const row = document.createElement('div');
     row.className = 'img-item';
+    row.dataset.idx = i;
     row.innerHTML =
       '<img alt="">' +
       '<div class="ii-meta"><div class="ii-name"></div><div class="ii-size"></div></div>' +
@@ -209,7 +283,9 @@ function cvRenderImgList() {
         '<button data-act="del" title="移除">✕</button>' +
       '</div>';
     const url = URL.createObjectURL(it.file);
-    row.querySelector('img').src = url;
+    const imgEl = row.querySelector('img');
+    imgEl.src = url;
+    imgEl.addEventListener('click', () => openImagePreview(cv.images, i));
     row.querySelector('.ii-name').textContent = it.name;
     row.querySelector('.ii-size').textContent = it.w + '×' + it.h + ' · ' + fmtSize(it.size);
     row.querySelector('.ii-btns').addEventListener('click', e => {
@@ -238,7 +314,8 @@ async function cvMakePdf() {
     const A4 = [595.28, 841.89];
 
     for (let i = 0; i < cv.images.length; i++) {
-      showBusy('正在处理 ' + (i + 1) + ' / ' + cv.images.length);
+      cvCheckCancel();
+      showBusy('正在处理 ' + (i + 1) + ' / ' + cv.images.length + '（可取消）', true);
       const it = cv.images[i];
       // pdf-lib 只认 PNG / JPEG，其他格式先转 JPEG
       let bytes, isPng = /png$/i.test(it.file.type);
@@ -284,6 +361,7 @@ async function cvMakePdf() {
     toast('已生成 PDF（' + cv.images.length + ' 页）');
   } catch (e) {
     hideBusy();
+    if (e && e.cancelled) { toast('已取消，未生成文件', 2400); return; }
     toast('生成失败：' + (e.message || e), 3600);
   }
 }
@@ -301,10 +379,24 @@ async function cvLoadCmpPdf(file) {
     cv.cmpBytes = bytes;
     cv.cmpName = file.name;
     cv.cmpPages = doc.numPages;
-    hideBusy();
     $('#cmpPdfName').textContent = file.name;
     $('#cmpPdfMeta').textContent = doc.numPages + ' 页 · ' + fmtSize(size);
     $('#cmpPdfInfo').classList.remove('hidden');
+
+    // 判断文字型还是扫描件，自动给出推荐档位
+    const info = await detectPdfKind(doc);
+    cv.cmpKind = info;
+    setSeg(document.querySelector('.seg[data-name="cmpmode"]'),
+           info.kind === 'text' ? 'lossless' : 'high');
+    const tip = $('#cmpKindTip');
+    if (tip) {
+      tip.textContent = info.kind === 'text'
+        ? '文字型 PDF（约 ' + info.avg + ' 字/页）：无损清理省得不多，要大幅缩小只能用图片化（文字将不可选中）'
+        : '扫描件（几乎无文字）：用「高质量」图片化，视觉上接近原样';
+      tip.className = 'kind-tip' + (info.kind === 'scan' ? ' scan' : '');
+      tip.classList.remove('hidden');
+    }
+    hideBusy();
     toast('已读取：共 ' + doc.numPages + ' 页');
   } catch (e) {
     hideBusy();
@@ -316,6 +408,7 @@ async function cvLoadCmpPdf(file) {
 async function rasterizePdf(doc, scale, quality, onProgress) {
   const out = [];
   for (let i = 1; i <= doc.numPages; i++) {
+    cvCheckCancel();
     if (onProgress) onProgress(i, doc.numPages);
     const page = await doc.getPage(i);
     const vp = page.getViewport({ scale });
@@ -345,6 +438,66 @@ async function pagesToPdf(pages) {
   return doc.save();
 }
 
+/**
+ * 判断 PDF 是文字型还是扫描件：统计前 5 页的平均字符数。
+ * ≥50 字/页视为文字型。
+ */
+async function detectPdfKind(doc) {
+  const n = Math.min(5, doc.numPages || 1);
+  let chars = 0;
+  for (let i = 1; i <= n; i++) {
+    try {
+      const page = await doc.getPage(i);
+      const tc = await page.getTextContent();
+      chars += tc.items.reduce((s, it) => s + (it.str || '').length, 0);
+      page.cleanup();
+    } catch (e) { /* 单页失败不影响整体判断 */ }
+  }
+  const avg = Math.round(chars / n);
+  return { kind: avg >= 50 ? 'text' : 'scan', avg };
+}
+
+/** 把某页渲染成 dataURL 缩略图，用于压缩前后对比。 */
+async function renderPageThumb(doc, pageNum, maxW) {
+  const page = await doc.getPage(pageNum);
+  const v1 = page.getViewport({ scale: 1 });
+  const vp = page.getViewport({ scale: maxW / v1.width });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.floor(vp.width);
+  canvas.height = Math.floor(vp.height);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  page.cleanup();
+  return canvas.toDataURL('image/jpeg', 0.82);
+}
+
+function showCompare(beforeUrl, afterUrl, beforeSize, afterSize) {
+  $('#cmpBeforeImg').src = beforeUrl;
+  $('#cmpAfterImg').src = afterUrl;
+  $('#cmpBeforeSize').textContent = fmtSize(beforeSize);
+  $('#cmpAfterSize').textContent = fmtSize(afterSize);
+  $('#compareDialog').classList.remove('hidden');
+}
+
+function closeCompare() {
+  const skip = $('#cmpSkipNext');
+  if (skip && skip.checked) {
+    saveSettings({ skipCompare: true });
+    toast('以后不再自动弹出，可在设置里恢复', 2600);
+  }
+  $('#compareDialog').classList.add('hidden');
+  $('#cmpBeforeImg').removeAttribute('src');
+  $('#cmpAfterImg').removeAttribute('src');
+}
+
+/** 三档压缩的参数。无损清理走单独分支，不在这里。 */
+const CMP_CFG = {
+  high:    { scale: 2, quality: 0.90 },
+  extreme: { scale: 1, quality: 0.60 }
+};
+
 /** 无损清理：只重写对象流，保留文字层。 */
 async function losslessSave(bytes) {
   const src = await PDFLib.PDFDocument.load(bytes);
@@ -353,22 +506,32 @@ async function losslessSave(bytes) {
 
 async function cvCompressPdf() {
   if (!cv.cmpDoc) { toast('请先选择一个 PDF'); return; }
-  const mode = segValue('cmpmode', 'lossy');
+  let mode = segValue('cmpmode', 'high');
   const targetKB = readTargetKB('cmpTarget', 'cmpunit');
   const targetBytes = targetKB * 1024;
+
+  // 无损清理省不动，若用户填了目标大小，自动改用图片化档位，否则永远达不到
+  if (mode === 'lossless' && targetBytes > 0 && cv.cmpBytes.length > targetBytes) {
+    mode = cv.cmpBytes.length > targetBytes * 4 ? 'extreme' : 'high';
+    toast('无损清理达不到目标，已自动改用' + (mode === 'extreme' ? '极限压缩' : '高质量'), 3600);
+  }
   const baseName = cv.cmpName.replace(/\.pdf$/i, '') || 'output';
   const originSize = cv.cmpBytes.length;
 
   try {
     let outBytes, modeUsed = mode, note = '';
 
+    // 压缩前先留一张第一页的样张，用于事后对比
+    let beforeThumb = null;
+    try { beforeThumb = await renderPageThumb(cv.cmpDoc, 1, 360); } catch (e) { /* 忽略 */ }
+
     if (mode === 'lossless') {
-      showBusy('正在清理冗余数据…');
+      showBusy('正在清理冗余数据…', true);
       outBytes = await losslessSave(cv.cmpBytes);
     } else {
-      const baseScale = parseFloat(segValue('cmpdpi', '1.5')) || 1.5;
-      let scale = baseScale;
-      let quality = 0.78;
+      const cfg = CMP_CFG[mode] || CMP_CFG.high;
+      let scale = cfg.scale;
+      let quality = cfg.quality;
 
       showBusy('正在渲染页面…');
       let pages = await rasterizePdf(cv.cmpDoc, scale, quality, (i, n) => {
@@ -385,7 +548,7 @@ async function cvCompressPdf() {
             scale = Math.max(0.28, scale * Math.max(0.62, Math.sqrt(ratio) * 0.94));
             quality = Math.max(0.2, quality * 0.95);
           } else {
-            quality = Math.max(0.12, quality * ratio * 0.9);
+            quality = Math.max(0.12, quality * ratio * 0.84);
           }
           showBusy('正在压缩（第 ' + (round + 2) + ' 轮，' +
             Math.round(scale * 100) / 100 + 'x / q' + Math.round(quality * 100) + '）…');
@@ -429,8 +592,19 @@ async function cvCompressPdf() {
       msg += '；未达到 ' + fmtSize(targetBytes) + ' 目标';
     }
     toast(msg, 5200);
+
+    // 生成压缩前后对比（失败不影响主流程；用户可选不再弹出）
+    if (beforeThumb && !loadSettings().skipCompare) {
+      try {
+        const outDoc = await pdfjsLib.getDocument({ data: outBytes.slice() }).promise;
+        const afterThumb = await renderPageThumb(outDoc, 1, 360);
+        outDoc.destroy();
+        showCompare(beforeThumb, afterThumb, originSize, blob.size);
+      } catch (e) { /* 忽略 */ }
+    }
   } catch (e) {
     hideBusy();
+    if (e && e.cancelled) { toast('已取消，未生成文件', 2400); return; }
     toast('压缩失败：' + (e.message || e), 3600);
   }
 }
@@ -443,12 +617,15 @@ function cmpRenderImgList() {
   cv.cmpImages.forEach((it, i) => {
     const row = document.createElement('div');
     row.className = 'img-item';
+    row.dataset.idx = i;
     row.innerHTML =
       '<img alt="">' +
       '<div class="ii-meta"><div class="ii-name"></div><div class="ii-size"></div></div>' +
       '<div class="ii-btns"><button data-act="del" title="移除">✕</button></div>';
     const url = URL.createObjectURL(it.file);
-    row.querySelector('img').src = url;
+    const imgEl = row.querySelector('img');
+    imgEl.src = url;
+    imgEl.addEventListener('click', () => openImagePreview(cv.cmpImages, i));
     row.querySelector('.ii-name').textContent = it.name;
     row.querySelector('.ii-size').textContent = it.w + '×' + it.h + ' · ' + fmtSize(it.size);
     row.querySelector('.ii-btns').addEventListener('click', e => {
@@ -474,8 +651,9 @@ async function cvCompressImages() {
     let before = 0, after = 0;
 
     for (let i = 0; i < cv.cmpImages.length; i++) {
+      cvCheckCancel();
       const it = cv.cmpImages[i];
-      showBusy('正在压缩 ' + (i + 1) + ' / ' + cv.cmpImages.length);
+      showBusy('正在压缩 ' + (i + 1) + ' / ' + cv.cmpImages.length + '（可取消）', true);
       before += it.size;
 
       let canvas = await imageToCanvas(it.file, maxSide);
@@ -515,8 +693,91 @@ async function cvCompressImages() {
       (saved > 0 ? '（省 ' + saved + '%）' : ''), 4200);
   } catch (e) {
     hideBusy();
+    if (e && e.cancelled) { toast('已取消，未生成文件', 2400); return; }
     toast('压缩失败：' + (e.message || e), 3600);
   }
+}
+
+/* ---------------- 设置记忆 ---------------- */
+
+// 分段控件 -> 设置键
+const PERSIST_SEGS = [
+  ['imgfmt2', 'fmt'],
+  ['dpi', 'dpi'],
+  ['cvscope', 'scope'],
+  ['pagesize', 'pagesize'],
+  ['cvmargin', 'cvmargin'],
+  ['cmpmode', 'cmpmode'],
+  ['cmpunit', 'cmpunit'],
+  ['cmpimgunit', 'cmpimgunit']
+];
+
+// 数值输入 -> 设置键
+const PERSIST_INPUTS = ['cmpTarget', 'cmpMaxSide', 'cmpQuality'];
+
+/** 把上次保存的参数回填到界面。 */
+function restoreSettings() {
+  const s = loadSettings();
+  PERSIST_SEGS.forEach(([name, key]) => {
+    const v = s['cv_' + key];
+    if (!v) return;
+    const seg = document.querySelector('.seg[data-name="' + name + '"]');
+    if (seg) setSeg(seg, v);
+  });
+  PERSIST_INPUTS.forEach(id => {
+    const v = s['cv_' + id];
+    if (v == null || v === '') return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = v;
+    if (id === 'cmpQuality') {
+      const lbl = $('#cmpQualityVal');
+      if (lbl) lbl.textContent = v;
+    }
+  });
+}
+
+/** 参数变化时写盘。 */
+function bindSettingsPersist() {
+  PERSIST_SEGS.forEach(([name, key]) => {
+    const seg = document.querySelector('.seg[data-name="' + name + '"]');
+    if (!seg) return;
+    seg.addEventListener('click', () => {
+      const v = segValue(name, '');
+      if (v) saveSettings({ ['cv_' + key]: v });
+    });
+  });
+  PERSIST_INPUTS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', () => saveSettings({ ['cv_' + id]: el.value }));
+  });
+}
+
+/* ---------------- 长任务取消 ---------------- */
+
+const cvCancel = { flag: false };
+
+/** 在耗时循环里调用；用户点过取消就抛出，由上层统一收尾。 */
+function cvCheckCancel() {
+  if (cvCancel.flag) {
+    cvCancel.flag = false;
+    const err = new Error('CANCELLED');
+    err.cancelled = true;
+    throw err;
+  }
+}
+
+function cvRequestCancel() {
+  cvCancel.flag = true;
+  const btn = $('#busyCancel');
+  if (btn) btn.textContent = '正在取消…';
+}
+
+function cvResetCancel() {
+  cvCancel.flag = false;
+  const btn = $('#busyCancel');
+  if (btn) { btn.textContent = '取消'; btn.classList.add('hidden'); }
 }
 
 /* ---------------- 初始化 ---------------- */
@@ -566,15 +827,14 @@ function cvInit() {
   const cmpmode = document.querySelector('.seg[data-name="cmpmode"]');
   if (cmpmode) {
     cmpmode.addEventListener('click', () => {
-      const v = segValue('cmpmode', 'lossy');
-      const row = $('#cmpDpiRow');
-      if (row) row.classList.toggle('hidden', v === 'lossless');
+      const v = segValue('cmpmode', 'high');
       const hint = $('#cmpHint');
-      if (hint) {
-        hint.textContent = v === 'lossless'
-          ? '无损清理只移除冗余对象与元数据，保留文字层，但体积通常只能降 5%~15%。'
-          : '图片化：每页转成图片重拼，体积能降很多，但文字不可再选中、搜索。';
-      }
+      if (!hint) return;
+      hint.textContent = {
+        lossless: '无损清理只移除冗余对象与元数据，保留文字层，但体积通常只能降 5%~15%。',
+        high: '高质量：按 2x 渲染并以 90 质量重编码，肉眼接近原样，但文字不可再选中。',
+        extreme: '极限压缩：按 1x 渲染、60 质量重编码，体积降幅最大，小字可能发虚。'
+      }[v] || '';
     });
   }
 
@@ -611,6 +871,13 @@ function cvInit() {
       if (block) block.querySelectorAll('.preset').forEach(b => b.classList.remove('on'));
     });
   });
+
+  restoreSettings();
+  bindSettingsPersist();
+
+  // 图片列表支持长按拖拽排序
+  bindDragSort('cvImgList', cv.images, cvRenderImgList);
+  bindDragSort('cmpImgList', cv.cmpImages, cmpRenderImgList);
 }
 
 document.addEventListener('DOMContentLoaded', cvInit);

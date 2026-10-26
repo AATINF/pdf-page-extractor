@@ -84,6 +84,13 @@ async def main():
         ck('PDF 图片化压缩变小', os.path.getsize(path3) < big_size,
            f'{fmt(big_size)} -> {fmt(os.path.getsize(path3))} ({d3.suggested_filename})')
 
+        # 压缩后会自动弹出效果对比，先关掉再继续
+        await page.wait_for_timeout(2500)
+        if await page.locator('#compareDialog').is_visible():
+            ck('压缩后弹出对比', True)
+            await page.click('#compareDialog .btn.primary')
+            await page.wait_for_timeout(400)
+
         # ---------- 压缩：目标大小 ----------
         await page.fill('#cmpTarget', '300')
         async with page.expect_download(timeout=180000) as dl4:
@@ -94,6 +101,11 @@ async def main():
         t4 = os.path.getsize(path4)
         ck('目标大小 300KB 内达成', t4 <= 300 * 1024,
            f'实际 {fmt(t4)}（目标 300KB）')
+
+        await page.wait_for_timeout(2500)
+        if await page.locator('#compareDialog').is_visible():
+            await page.click('#compareDialog .btn.primary')
+            await page.wait_for_timeout(300)
 
         # ---------- 压缩：图片 ----------
         await page.click('#cmpModeSeg >> text=图片压缩')
