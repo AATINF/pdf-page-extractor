@@ -2,6 +2,28 @@
 
 所有版本均可在 [Release 页面](https://github.com/AATINF/pdf-page-extractor/releases) 下载。
 
+## v1.6.3（2026-10-27）
+
+### 修复：表单域内容丢失（严重）
+证书、合同、填好的表格这类 PDF，页面上填写的文字（姓名、日期、单位）在预览和导出时**全部空白**，只剩下静态印刷文字。
+
+原因：PDF.js 的 `page.render()` **默认不绘制表单域（AcroForm）**，必须显式传 `annotationMode`。7 处渲染调用全部漏了。
+
+修复后，缩略图、预览、PDF 转图片、PDF 压缩、对比图都会包含表单内容。
+
+### 修复：预览后导出报错
+报错 `Cannot read properties of null (reading 'sendWithPromise')`。
+
+原因：`closePreview()` 用 `p.doc !== state.doc` 判断是否销毁临时文档，没考虑到转换/压缩模式的文档属于各自模块。在转换页预览一次再关闭，`cv.pdfDoc` 就被销毁了，接着点导出必然失败。
+
+修复：预览时记录 `owned` 标记，只有预览层自己创建的文档才销毁。
+
+### 测试
+- 新增带表单域的测试 PDF，验证渲染与导出
+- 全量 127 项断言通过
+
+---
+
 ## v1.6.2（2026-10-26）
 
 ### 修复

@@ -156,7 +156,7 @@ async function cvExportImages() {
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      await page.render({ canvasContext: ctx, viewport: vp, annotationMode: ANN_ENABLE }).promise;
       const blob = await canvasBlob(canvas, mime, fmt === 'png' ? undefined : 0.92);
       const ext = fmt === 'png' ? 'png' : 'jpg';
       items.push({ name: base + '_第' + nums[k] + '页.' + ext, blob });
@@ -418,7 +418,7 @@ async function rasterizePdf(doc, scale, quality, onProgress) {
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    await page.render({ canvasContext: ctx, viewport: vp, annotationMode: ANN_ENABLE }).promise;
     const blob = await canvasBlob(canvas, 'image/jpeg', quality);
     out.push({ blob, ptW: vp.width / scale, ptH: vp.height / scale });
     page.cleanup();
@@ -468,7 +468,7 @@ async function renderPageThumb(doc, pageNum, maxW) {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  await page.render({ canvasContext: ctx, viewport: vp, annotationMode: ANN_ENABLE }).promise;
   page.cleanup();
   return canvas.toDataURL('image/jpeg', 0.82);
 }

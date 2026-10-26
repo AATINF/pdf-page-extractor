@@ -35,6 +35,15 @@ const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
 /**
+ * 渲染页面时的注释/表单模式。
+ * PDF.js 默认不绘制表单域（AcroForm），证书、合同、填好的表格会变成空白，
+ * 必须显式开启。ENABLE = 1，兼容旧版没有 AnnotationMode 枚举的情况。
+ */
+const ANN_ENABLE = (typeof pdfjsLib !== 'undefined' && pdfjsLib.AnnotationMode)
+  ? pdfjsLib.AnnotationMode.ENABLE
+  : 1;
+
+/**
  * 全局运行状态对象。
  * - bytes：当前打开的 PDF 原始字节（Uint8Array）
  * - doc：pdf.js 解析出的文档对象，用于缩略图、预览与图片化输出
@@ -686,7 +695,7 @@ async function renderThumb(n, card) {
     canvas.height = Math.max(1, Math.floor(vp.height * dpr));
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
-    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    await page.render({ canvasContext: ctx, viewport: vp, annotationMode: ANN_ENABLE }).promise;
     const ph = card.querySelector('.ph');
     if (ph) ph.remove();
     page.cleanup();
@@ -899,11 +908,13 @@ function openPreview(n) {
  * @param {string} name 显示在标题里的文件名，可为空
  * @param {number} page 起始页
  */
-function openPdfPreview(doc, name, page) {
+function openPdfPreview(doc, name, page, owned) {
   if (!doc) return;
   const total = doc.numPages || 1;
   const p = Math.max(1, Math.min(page || 1, total));
-  state.preview = { type: 'pdf', doc, page: p, zoom: 1, title: name || '' };
+  // owned=true 表示这个文档是预览层自己创建的，关闭时要销毁；
+  // 转换/压缩模式传进来的文档属于各自模块，不能在这里销毁
+  state.preview = { type: 'pdf', doc, page: p, zoom: 1, title: name || '', owned: !!owned };
   $('#previewModal').classList.remove('hidden');
   applyPreviewMode();
   $('#pvTitle').textContent =
@@ -943,7 +954,7 @@ async function previewMergeFile(i) {
     showBusy('正在打开预览…');
     const doc = await pdfjsLib.getDocument({ data: f.bytes.slice() }).promise;
     hideBusy();
-    openPdfPreview(doc, f.name, 1);
+    openPdfPreview(doc, f.name, 1, true);
   } catch (e) {
     hideBusy();
     toast('预览失败：' + (e.message || e), 3000);
@@ -989,8 +1000,8 @@ function renderImagePreview() {
 function closePreview() {
   const p = state.preview;
   if (p && p.url) URL.revokeObjectURL(p.url);
-  // 临时文档（合并/转换/压缩的预览）用完销毁，主文档不能动
-  if (p && p.doc && p.doc !== state.doc && p.doc.destroy) {
+  // 只销毁预览层自己创建的文档；转换/压缩/主文档都归各自模块管理
+  if (p && p.owned && p.doc && p.doc.destroy) {
     try { p.doc.destroy(); } catch (e) { /* 忽略 */ }
   }
   state.preview = null;
@@ -1068,7 +1079,7 @@ async function renderPreview() {
     canvas.style.height = vp.height + 'px';
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
-    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    await page.render({ canvasContext: ctx, viewport: vp, annotationMode: ANN_ENABLE }).promise;
     page.cleanup();
     $('#pvWrap').scrollTop = 0;
   } catch (e) { /* 忽略预览渲染错误 */ }
@@ -1118,7 +1129,7 @@ async function renderPageToImage(n, scale, fmt) {
   canvas.width  = Math.max(1, Math.floor(vp.width));
   canvas.height = Math.max(1, Math.floor(vp.height));
   const ctx = canvas.getContext('2d');
-  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  await page.render({ canvasContext: ctx, viewport: vp, annotationMode: ANN_ENABLE }).promise;
   page.cleanup();
   const blob = await new Promise(r => canvas.toBlob(r, fmt === 'png' ? 'image/png' : 'image/jpeg', 0.92));
   return { bytes: new Uint8Array(await blob.arrayBuffer()), width: vp.width, height: vp.height };
@@ -1368,7 +1379,7 @@ async function mergeAll() {
           canvas.width  = Math.floor(vp.width);
           canvas.height = Math.floor(vp.height);
           const ctx = canvas.getContext('2d');
-          await page.render({ canvasContext: ctx, viewport: vp }).promise;
+          await page.render({ canvasContext: ctx, viewport: vp, annotationMode: ANN_ENABLE }).promise;
           page.cleanup();
           const blob = await new Promise(r => canvas.toBlob(r, s.fmt === 'png' ? 'image/png' : 'image/jpeg', 0.92));
           const img = s.fmt === 'png'

@@ -49,10 +49,14 @@ async def main():
         cancelled_ok = False
         btn_seen = False
         try:
-            async with page.expect_download(timeout=8000):
+            async with page.expect_download(timeout=12000):
                 await page.click('text=开始压缩')
-                await page.wait_for_timeout(1500)
-                btn_seen = await page.locator('#busyCancel').is_visible()
+                # 轮询等待取消按钮出现（开表单渲染后首屏会更慢）
+                for _ in range(12):
+                    if await page.locator('#busyCancel').is_visible():
+                        btn_seen = True
+                        break
+                    await page.wait_for_timeout(400)
                 if btn_seen:
                     await page.click('#busyCancel')
             cancelled_ok = False   # 拿到下载 = 取消没生效
