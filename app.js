@@ -140,6 +140,8 @@ function doDownload(blob, name) {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+  // 浏览器里没有 content:// URI，历史只留名字与体积
+  addHistory({ name, size: blob.size, time: Date.now(), uri: null, mime: blob.type || '' });
 }
 
 /* ---------------- 设置 ---------------- */

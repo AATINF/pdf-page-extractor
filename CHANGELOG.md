@@ -2,6 +2,14 @@
 
 所有版本均可在 [Release 页面](https://github.com/AATINF/pdf-page-extractor/releases) 下载。
 
+## v1.6.1（2026-10-26）
+
+### 修复
+- 浏览器下载路径没有写入导出历史（只有 App 原生保存才记），导致网页版历史为空
+- `rasterizePdf` 的进度回调漏传 `canCancel`，长任务里取消按钮不显示
+
+---
+
 ## v1.6.0（2026-10-26）
 
 ### 新增：全模式预览

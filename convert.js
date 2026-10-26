@@ -535,7 +535,7 @@ async function cvCompressPdf() {
 
       showBusy('正在渲染页面…');
       let pages = await rasterizePdf(cv.cmpDoc, scale, quality, (i, n) => {
-        showBusy('正在渲染 ' + i + ' / ' + n);
+        showBusy('正在渲染 ' + i + ' / ' + n + '（可取消）', true);
       });
       let total = pages.reduce((s, p) => s + p.blob.size, 0);
 
@@ -553,7 +553,7 @@ async function cvCompressPdf() {
           showBusy('正在压缩（第 ' + (round + 2) + ' 轮，' +
             Math.round(scale * 100) / 100 + 'x / q' + Math.round(quality * 100) + '）…');
           pages = await rasterizePdf(cv.cmpDoc, scale, quality, (i, n) => {
-            showBusy('正在压缩 ' + i + ' / ' + n);
+            showBusy('正在压缩 ' + i + ' / ' + n + '（可取消）', true);
           });
           total = pages.reduce((s, p) => s + p.blob.size, 0);
         }

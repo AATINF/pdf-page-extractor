@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>PDF 页面提取器 v1.6.0</title>
+<title>PDF 页面提取器 v1.6.1</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -860,7 +860,7 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
 
 <header>
   <div class="h-icon"><svg viewBox="0 0 24 24"><use href="#i-doc"/></svg></div>
-  <h1>PDF 页面提取器 <span class="badge" id="verTag">v1.6.0</span></h1>
+  <h1>PDF 页面提取器 <span class="badge" id="verTag">v1.6.1</span></h1>
   <div class="sub" id="fileInfo">选择或打开一个 PDF，勾选页面后提取为新文件（全程本地处理，文件不会上传）</div>
   <div class="h-right">
     <button class="h-btn" onclick="openSettings()" title="设置" aria-label="设置">
@@ -886,7 +886,7 @@ header{padding:calc(11px + var(--safe-t)) 16px 11px}
       <p class="dz-title">选择一个 PDF 文件</p>
       <p class="dz-desc">勾选任意页面提取为新 PDF，也可以拆分单页、多文件合并</p>
       <button class="dz-cta" onclick="event.stopPropagation();document.getElementById('fileInput').click()"><svg viewBox="0 0 24 24"><use href="#i-folder"/></svg>选择 PDF</button>
-      <p class="dz-foot"><span id="appVer">v1.6.0</span> · 全程在本机处理，文件不会上传</p>
+      <p class="dz-foot"><span id="appVer">v1.6.1</span> · 全程在本机处理，文件不会上传</p>
       <input type="file" id="fileInput" accept="application/pdf,.pdf" class="hidden">
       <div id="urlRow">
         <p style="margin-top:10px;color:var(--sub);font-size:12px">也可以从链接打开：</p>
@@ -1538,6 +1538,8 @@ function doDownload(blob, name) {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+  // 浏览器里没有 content:// URI，历史只留名字与体积
+  addHistory({ name, size: blob.size, time: Date.now(), uri: null, mime: blob.type || '' });
 }
 
 /* ---------------- 设置 ---------------- */
@@ -3460,7 +3462,7 @@ async function cvCompressPdf() {
 
       showBusy('正在渲染页面…');
       let pages = await rasterizePdf(cv.cmpDoc, scale, quality, (i, n) => {
-        showBusy('正在渲染 ' + i + ' / ' + n);
+        showBusy('正在渲染 ' + i + ' / ' + n + '（可取消）', true);
       });
       let total = pages.reduce((s, p) => s + p.blob.size, 0);
 
@@ -3478,7 +3480,7 @@ async function cvCompressPdf() {
           showBusy('正在压缩（第 ' + (round + 2) + ' 轮，' +
             Math.round(scale * 100) / 100 + 'x / q' + Math.round(quality * 100) + '）…');
           pages = await rasterizePdf(cv.cmpDoc, scale, quality, (i, n) => {
-            showBusy('正在压缩 ' + i + ' / ' + n);
+            showBusy('正在压缩 ' + i + ' / ' + n + '（可取消）', true);
           });
           total = pages.reduce((s, p) => s + p.blob.size, 0);
         }
