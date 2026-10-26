@@ -32,7 +32,7 @@
 | | |
 |---|---|
 | **版本** | v1.2.1 |
-| **大小** | 3.9 MB |
+| **大小** | 1.6 MB（v1.4.0 起，此前 3.9 MB） |
 | **系统要求** | Android 7.0（API 24）及以上 |
 | **权限** | 只有 1 个：`INTERNET`（见下方说明） |
 | **下载** | [pdf-page-extractor-v1.2.1.apk](https://github.com/AATINF/pdf-page-extractor/releases/latest/download/pdf-page-extractor.apk) |

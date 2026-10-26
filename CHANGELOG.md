@@ -2,6 +2,29 @@
 
 所有版本均可在 [Release 页面](https://github.com/AATINF/pdf-page-extractor/releases) 下载。
 
+## v1.4.0（2026-10-26）
+
+### 体积：3.91 MB → **1.56 MB**（-60%）
+- **移除冗余的 `lib/pdf.worker.min.js`**：worker 早已内联进 `index.html`，再复制一份进 APK 白占 1.1MB。`www/` 从 3.04MB 降到 2.04MB
+- **开启 R8**（`minifyEnabled` + `shrinkResources` + `proguard-android-optimize.txt`）
+- 补充 proguard 规则，保留 Capacitor 反射、注解与 JS 桥所需的一切类
+
+### 性能
+- 缩略图渲染改为**并发队列（上限 3）**。之前快速滚动时 IntersectionObserver 会一次触发几十张卡片并行渲染，瞬间吃满内存
+- 换文件时清空待渲染队列，避免旧文档卡片被误渲染
+
+### 体验
+- 压缩目标大小支持 **KB / MB** 单位切换
+- 新增快捷预设：200K / 500K / 1M / 2M / 5M，点击自动填值并切换单位
+- 手动输入时自动取消预设高亮
+
+### 代码
+- `app.js` 补全模块职责、加载顺序、对外接口说明，便于后续维护
+
+> ⚠️ R8 会重写字节码，首次启用需要实机验证。若出现白屏或闪退，回退到 v1.3.0 即可。
+
+---
+
 ## v1.3.0（2026-10-26）
 
 ### 新增
