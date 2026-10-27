@@ -223,6 +223,8 @@ APK 的 `AndroidManifest.xml` 里实际只声明了两个：
 
 > 💡 **单文件版下载**：[点此获取](https://github.com/AATINF/pdf-page-extractor/releases/latest/download/pdf-page-extractor.html)，2 MB，拷到哪都能用，**无需安装、无需联网**。
 
+> ⚠️ **单文件版的一个限制**：部分中文 PDF 使用 CID 编码且没有嵌入字体，需要 PDF.js 的 cMap 字符映射表才能显示中文。cMap 是 168 个独立文件，无法塞进单个 HTML，所以**这类 PDF 在单文件版里中文可能显示为空白**。遇到这种情况请用 **安卓 App** 或 `index.html` + `lib/` 多文件版（两者都内置了 cMap）。
+
 ---
 
 ## 🔐 隐私：为什么比在线工具安全

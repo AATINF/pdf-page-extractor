@@ -72,8 +72,10 @@ function loadImage(file) {
 async function imageToCanvas(file, maxSide) {
   const { img, url, w, h } = await loadImage(file);
   let tw = w, th = h;
-  if (maxSide && Math.max(w, h) > maxSide) {
-    const k = maxSide / Math.max(w, h);
+  // 默认上限 4096px：手机相机的 8000px 原图直接画进 canvas 会吃掉几百 MB 内存
+  const limit = maxSide || 4096;
+  if (Math.max(w, h) > limit) {
+    const k = limit / Math.max(w, h);
     tw = Math.round(w * k);
     th = Math.round(h * k);
   }
@@ -126,6 +128,10 @@ async function cvLoadPdf(file) {
     toast('已读取：共 ' + doc.numPages + ' 页');
   } catch (e) {
     hideBusy();
+    if (e && e.name === 'PasswordException') {
+      toast('此 PDF 已加密。请先切到「提取」输入密码打开，再来转换', 4200);
+      return;
+    }
     toast('读取失败：' + (e.message || e), 3600);
   }
 }
@@ -138,8 +144,13 @@ async function cvExportImages() {
   const mime = fmt === 'png' ? 'image/png' : 'image/jpeg';
 
   let nums = [];
-  if (scope === 'sel' && state.selection && state.selection.size) {
-    nums = [...state.selection].sort((a, b) => a - b);
+  if (scope === 'sel') {
+    if (state.selection && state.selection.size) {
+      nums = [...state.selection].sort((a, b) => a - b);
+    } else {
+      toast('还没有在「提取」里选过页面，将导出全部', 3000);
+      for (let i = 1; i <= cv.pdfPages; i++) nums.push(i);
+    }
   } else {
     for (let i = 1; i <= cv.pdfPages; i++) nums.push(i);
   }
@@ -151,7 +162,14 @@ async function cvExportImages() {
       cvCheckCancel();
       showBusy('正在渲染 ' + (k + 1) + ' / ' + nums.length + '（可取消）', true);
       const page = await cv.pdfDoc.getPage(nums[k]);
-      const vp = page.getViewport({ scale });
+      let vp = page.getViewport({ scale });
+      // 超大页面（如 A0）在 3x 下会生成上亿像素的 canvas，直接崩溃
+      const MAX_PX = 40 * 1000 * 1000;
+      if (vp.width * vp.height > MAX_PX) {
+        const k = Math.sqrt(MAX_PX / (vp.width * vp.height));
+        vp = page.getViewport({ scale: scale * k });
+        toast('页面尺寸过大，已自动降低清晰度', 2600);
+      }
       const canvas = document.createElement('canvas');
       canvas.width = Math.floor(vp.width);
       canvas.height = Math.floor(vp.height);
@@ -408,6 +426,10 @@ async function cvLoadCmpPdf(file) {
     toast('已读取：共 ' + doc.numPages + ' 页');
   } catch (e) {
     hideBusy();
+    if (e && e.name === 'PasswordException') {
+      toast('此 PDF 已加密。请先切到「提取」输入密码打开，再来压缩', 4200);
+      return;
+    }
     toast('读取失败：' + (e.message || e), 3600);
   }
 }
