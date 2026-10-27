@@ -1,6 +1,6 @@
 {
   "name": "pdf-page-extractor",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "private": true,
   "description": "PDF 页面提取器 — 提取 / 拆分 / 合并，全程本机处理，不联网",
   "scripts": {

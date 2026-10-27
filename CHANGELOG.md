@@ -2,6 +2,14 @@
 
 所有版本均可在 [Release 页面](https://github.com/AATINF/pdf-page-extractor/releases) 下载。
 
+## v1.7.1（2026-10-27）
+
+### 修复
+- 模块化后 `src/README.md` 被 `prepare_www.py` 的安全检查当成"不该打包的文件"，
+  导致 CI 构建失败。复制目录时排除 `*.md` / `README*`。
+
+---
+
 ## v1.7.0（2026-10-27）
 
 ### 重构：代码模块化（纯结构调整，功能零变化）

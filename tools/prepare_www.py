@@ -44,7 +44,8 @@ def main():
         src = ROOT / d
         if not src.exists():
             sys.exit('缺少目录: ' + d)
-        shutil.copytree(src, WWW / d, ignore=shutil.ignore_patterns())
+        # 文档类文件不进包（src/README.md 这类说明文档）
+        shutil.copytree(src, WWW / d, ignore=shutil.ignore_patterns('*.md', 'README*'))
         for rel in REDUNDANT:
             p = WWW / rel
             if p.exists() and p.parts[len(WWW.parts)] == d:
