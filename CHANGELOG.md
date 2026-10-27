@@ -2,6 +2,33 @@
 
 所有版本均可在 [Release 页面](https://github.com/AATINF/pdf-page-extractor/releases) 下载。
 
+## v1.7.0（2026-10-27）
+
+### 重构：代码模块化（纯结构调整，功能零变化）
+原来两个巨型文件 `app.js`（1555 行）+ `convert.js`（913 行）拆成 **21 个模块**：
+
+```
+src/core/      10 个   基础设施：DOM 查询、环境常量、格式化、存储、取消令牌、
+                       提示层、布局同步、历史、控件读写、图片编码
+src/features/   9 个   业务：导出、文档、选页、预览、提取、合并、转换、压缩、参数记忆
+src/ui/         1 个   通用对话框与拖拽绑定
+src/main.js            入口：init / cvInit / 挂 window
+```
+
+**依赖用 `PDFX.xxx` 运行时查找，不用 import/解构。** 因为模块间存在循环依赖
+（`document` 调 `selection` 的 `toggleSelect`，`selection` 又调 `document` 的 `makeCard`），
+静态解构会在模块尚未加载时拿到 `undefined`。
+
+配套改动：
+- 新增 `src/README.md`：目录说明、依赖规则、加载顺序、如何新增功能
+- `build_single.py` 改为按 `index.html` 里的顺序自动内联所有脚本（不再写死文件名）
+- `prepare_www.py` 改为整目录复制 `src/`
+- 一次性拆分脚本归档到 `tools/legacy/`
+
+**验证：164 项测试全绿，单文件版 file:// 打开正常。**
+
+---
+
 ## v1.6.6（2026-10-27）
 
 ### 改进：异常场景的提示与保护

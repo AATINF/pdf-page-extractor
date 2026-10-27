@@ -8,8 +8,8 @@ import json, re, shutil, pathlib, sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 WWW = ROOT / 'www'
 
-FILES = ['index.html', 'app.js', 'convert.js', 'manifest.webmanifest']
-DIRS = ['lib', 'icons']
+FILES = ['index.html', 'manifest.webmanifest']
+DIRS = ['lib', 'icons', 'src']
 
 def main():
     if WWW.exists():
